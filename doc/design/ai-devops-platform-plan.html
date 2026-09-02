@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AI DevOps／AIOps 全自動維運平台規劃報告">
+  <title>AI DevOps 全自動維運平台規劃報告</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-2: #eef3f8;
+      --text: #182230;
+      --muted: #536170;
+      --line: #d8e0e8;
+      --primary: #075985;
+      --primary-soft: #e0f2fe;
+      --green: #166534;
+      --green-soft: #dcfce7;
+      --amber: #92400e;
+      --amber-soft: #fef3c7;
+      --red: #991b1b;
+      --red-soft: #fee2e2;
+      --violet: #6b21a8;
+      --violet-soft: #f3e8ff;
+      --shadow: 0 12px 34px rgba(15, 23, 42, .08);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --surface: #121c2b;
+        --surface-2: #192638;
+        --text: #edf4fb;
+        --muted: #b6c3d1;
+        --line: #334357;
+        --primary: #7dd3fc;
+        --primary-soft: #15364a;
+        --green: #86efac;
+        --green-soft: #153a2a;
+        --amber: #fcd34d;
+        --amber-soft: #493818;
+        --red: #fca5a5;
+        --red-soft: #4b2025;
+        --violet: #d8b4fe;
+        --violet-soft: #38204a;
+        --shadow: 0 12px 34px rgba(0, 0, 0, .24);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      font-size: 18px;
+      line-height: 1.75;
+    }
+    a { color: var(--primary); text-underline-offset: 3px; }
+    button { font: inherit; }
+    h1, h2, h3 { line-height: 1.28; letter-spacing: -.02em; }
+    h1 { margin: 0; font-size: clamp(2.1rem, 5vw, 4rem); }
+    h2 { margin: 0 0 1.2rem; font-size: clamp(1.65rem, 3vw, 2.45rem); }
+    h3 { margin: 0 0 .7rem; font-size: 1.22rem; }
+    p { margin: .65rem 0 1rem; }
+    ul, ol { padding-left: 1.3rem; }
+    li + li { margin-top: .35rem; }
+    code {
+      padding: .08rem .32rem;
+      border: 1px solid var(--line);
+      border-radius: .35rem;
+      background: var(--surface-2);
+      font-size: .9em;
+    }
+
+    .page { width: min(1480px, calc(100% - 32px)); margin: 0 auto; }
+    .hero {
+      margin: 24px auto 0;
+      padding: clamp(32px, 7vw, 84px);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 90% 15%, var(--primary-soft), transparent 34%),
+        var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 1rem;
+      padding: .28rem .7rem;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+    .hero .lead { max-width: 900px; margin-top: 1.25rem; font-size: 1.24rem; color: var(--muted); }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: .65rem 1.4rem; margin-top: 1.7rem; color: var(--muted); }
+    .print-btn {
+      margin-top: 1.6rem;
+      padding: .62rem 1rem;
+      border: 1px solid var(--primary);
+      border-radius: .65rem;
+      background: var(--primary);
+      color: var(--bg);
+      cursor: pointer;
+    }
+
+    .toc {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      margin-top: 18px;
+      padding: .8rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+    }
+    .toc ol { display: flex; gap: .45rem 1.15rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
+    .toc a { font-size: .92rem; font-weight: 650; text-decoration: none; }
+
+    main section.report-section {
+      margin: 26px 0;
+      padding: clamp(24px, 5vw, 52px);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      scroll-margin-top: 88px;
+    }
+    .section-intro { max-width: 970px; color: var(--muted); }
+    .grid { display: grid; gap: 18px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card {
+      padding: 1.25rem;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface-2);
+    }
+    .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+    .num {
+      display: inline-grid;
+      place-items: center;
+      width: 2.2rem;
+      height: 2.2rem;
+      margin-bottom: .8rem;
+      border-radius: 50%;
+      background: var(--primary);
+      color: var(--bg);
+      font-weight: 800;
+    }
+    .callout {
+      margin-top: 1.3rem;
+      padding: 1.1rem 1.2rem;
+      border-left: 6px solid var(--primary);
+      border-radius: 8px 14px 14px 8px;
+      background: var(--primary-soft);
+    }
+
+    /* Large, readable architecture */
+    .architecture {
+      margin-top: 1.8rem;
+      padding: clamp(14px, 3vw, 28px);
+      border: 2px solid var(--line);
+      border-radius: 20px;
+      background: var(--bg);
+    }
+    .layer { padding: 1.1rem; border-radius: 16px; background: var(--surface); }
+    .layer-head {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      margin-bottom: 1rem;
+    }
+    .layer-index {
+      display: inline-grid;
+      place-items: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 12px;
+      background: var(--primary);
+      color: var(--bg);
+      font-size: 1.15rem;
+      font-weight: 800;
+      flex: 0 0 auto;
+    }
+    .layer h3 { margin: 0; font-size: 1.32rem; }
+    .nodes { display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: 12px; }
+    .node {
+      min-height: 92px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: .85rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface-2);
+      font-weight: 720;
+      line-height: 1.42;
+    }
+    .node small { display: block; margin-top: .28rem; color: var(--muted); font-weight: 500; }
+    .arrow-down {
+      position: relative;
+      width: 4px;
+      height: 46px;
+      margin: 0 auto;
+      background: var(--primary);
+    }
+    .arrow-down::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      width: 14px;
+      height: 14px;
+      border-right: 4px solid var(--primary);
+      border-bottom: 4px solid var(--primary);
+      transform: translateX(-50%) rotate(45deg);
+    }
+    .feedback {
+      margin-top: 1.1rem;
+      padding: .9rem 1rem;
+      border: 2px dashed var(--primary);
+      border-radius: 14px;
+      color: var(--primary);
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .timeline { counter-reset: step; display: grid; gap: 0; margin-top: 1.5rem; }
+    .timeline-row { display: grid; grid-template-columns: 120px 34px 1fr; gap: 14px; align-items: stretch; }
+    .timeline-time { padding-top: 1rem; color: var(--primary); font-weight: 800; text-align: right; }
+    .timeline-line { position: relative; }
+    .timeline-line::before { content: ""; position: absolute; top: 0; bottom: 0; left: 15px; width: 4px; background: var(--line); }
+    .timeline-dot { position: absolute; top: 1.25rem; left: 7px; width: 20px; height: 20px; border: 4px solid var(--surface); border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
+    .timeline-content { margin-bottom: 16px; padding: 1rem 1.15rem; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+
+    .flow { display: grid; grid-template-columns: repeat(7, minmax(130px, 1fr)); gap: 28px; margin-top: 1.4rem; }
+    .flow-step { position: relative; padding: 1rem; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+    .flow-step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -25px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--primary);
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+    .flow-step strong { display: block; margin-bottom: .35rem; color: var(--primary); }
+
+    .table-wrap { overflow-x: auto; margin-top: 1rem; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: .85rem .9rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: var(--surface-2); font-size: .94rem; }
+    tr:last-child td { border-bottom: 0; }
+    .level { font-weight: 800; white-space: nowrap; }
+    .safe { color: var(--green); }
+    .warn { color: var(--amber); }
+    .danger { color: var(--red); }
+
+    .roadmap { display: grid; grid-template-columns: repeat(6, minmax(180px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: .5rem; }
+    .month { padding: 1rem; border-top: 6px solid var(--primary); border-radius: 10px; background: var(--surface-2); }
+    .month strong { display: block; margin-bottom: .55rem; font-size: 1.08rem; }
+
+    .checklist { list-style: none; padding: 0; }
+    .checklist li { position: relative; padding: .45rem 0 .45rem 2rem; }
+    .checklist li::before { content: "✓"; position: absolute; left: 0; color: var(--green); font-weight: 900; }
+    .tag {
+      display: inline-block;
+      margin: .16rem .25rem .16rem 0;
+      padding: .18rem .55rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-2);
+      font-size: .9rem;
+    }
+    .sources { font-size: .94rem; color: var(--muted); }
+    footer { padding: 0 0 48px; color: var(--muted); text-align: center; }
+
+    @media (max-width: 1120px) {
+      .nodes { grid-template-columns: repeat(3, minmax(160px, 1fr)); }
+      .flow { grid-template-columns: 1fr; gap: 12px; }
+      .flow-step:not(:last-child)::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -22px; transform: translateX(-50%); }
+    }
+    @media (max-width: 760px) {
+      body { font-size: 16px; }
+      .page { width: min(100% - 20px, 1480px); }
+      .hero { padding: 28px 22px; border-radius: 20px; }
+      .toc { position: static; }
+      .toc ol { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid-2, .grid-3, .nodes { grid-template-columns: 1fr; }
+      .timeline-row { grid-template-columns: 74px 26px 1fr; gap: 8px; }
+      .timeline-line::before { left: 11px; }
+      .timeline-dot { left: 3px; }
+      main section.report-section { padding: 24px 18px; border-radius: 18px; }
+    }
+
+    @media print {
+      :root { --bg: #fff; --surface: #fff; --surface-2: #f4f6f8; --text: #111827; --muted: #4b5563; --line: #cfd6de; --primary: #075985; --primary-soft: #e0f2fe; }
+      body { font-size: 11pt; }
+      .page { width: 100%; }
+      .hero, main section.report-section { box-shadow: none; break-inside: avoid; }
+      .toc, .print-btn { display: none; }
+      a { color: inherit; text-decoration: none; }
+      .nodes { grid-template-columns: repeat(5, 1fr); }
+      .flow { grid-template-columns: repeat(7, 1fr); gap: 18px; }
+      .roadmap { grid-template-columns: repeat(3, 1fr); overflow: visible; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page hero">
+    <span class="eyebrow">AI SRE／AIOps PLATFORM BLUEPRINT</span>
+    <h1>AI DevOps<br>全自動維運平台規劃報告</h1>
+    <p class="lead">建立「每日預防性巡檢＋即時異常偵測＋AI 根因分析＋受控自動處置＋事後學習」的完整閉環，在事故發生前找出風險，事故發生時縮短恢復時間。</p>
+    <div class="hero-meta">
+      <span>版本：1.0</span>
+      <span>日期：2026-09-03</span>
+      <span>適用：DevOps／SRE／平台工程團隊</span>
+    </div>
+    <button class="print-btn" type="button" onclick="window.print()">列印或另存 PDF</button>
+  </header>
+
+  <nav class="page toc" aria-label="報告目錄">
+    <ol>
+      <li><a href="#summary">執行摘要</a></li>
+      <li><a href="#architecture">平台架構</a></li>
+      <li><a href="#daily">每日預防</a></li>
+      <li><a href="#realtime">即時處理</a></li>
+      <li><a href="#ai">AI 分析</a></li>
+      <li><a href="#safety">安全控制</a></li>
+      <li><a href="#roadmap">落地路線</a></li>
+      <li><a href="#kpi">衡量成效</a></li>
+    </ol>
+  </nav>
+
+  <main class="page">
+    <section id="summary" class="report-section">
+      <h2>一、執行摘要</h2>
+      <p class="section-intro">本平台不是一個「能下指令的聊天機器人」，而是一個具有觀測、推理、安全控制、執行驗證及持續學習能力的 AI 維運控制面。</p>
+      <div class="grid grid-3">
+        <article class="card">
+          <span class="num">1</span>
+          <h3>提前防範</h3>
+          <p>每日分析趨勢、容量、錯誤型態、憑證、備份、SLO 與近期變更，在服務故障前建立風險項目。</p>
+        </article>
+        <article class="card">
+          <span class="num">2</span>
+          <h3>快速診斷</h3>
+          <p>事件發生時，自動關聯 metrics、logs、traces、部署紀錄與服務拓樸，產生附證據的根因假設。</p>
+        </article>
+        <article class="card">
+          <span class="num">3</span>
+          <h3>安全處置</h3>
+          <p>所有正式環境變更均通過獨立安全閘道，執行 dry-run、風險判斷、授權、驗證與必要時回滾。</p>
+        </article>
+      </div>
+      <div class="callout"><strong>核心建議：</strong>先用 5～10 個關鍵服務導入 L1「AI 診斷建議」，再升級到 L2「人工批准後執行」，最後只對低風險、可逆、經過大量驗證的情境開放 L3 自動處置。</div>
+    </section>
+
+    <section id="architecture" class="report-section">
+      <h2>二、平台整體架構</h2>
+      <p class="section-intro">架構採五層設計。AI 推理層與正式環境執行層完全分離，避免模型擁有不受控的生產權限。</p>
+
+      <div class="architecture" role="img" aria-label="AI DevOps 平台五層架構，由資料來源依序流向資料平台、偵測分析、AI 診斷、安全執行，最後回饋學習。">
+        <div class="layer">
+          <div class="layer-head"><span class="layer-index">1</span><h3>資料來源層｜建立完整的系統脈絡</h3></div>
+          <div class="nodes">
+            <div class="node">Metrics／Logs／Traces<small>服務、主機、容器與網路訊號</small></div>
+            <div class="node">Kubernetes／Cloud／DB<small>執行狀態、事件、稽核與資源資料</small></div>
+            <div class="node">Git／CI-CD<small>版本、部署、設定及變更時間線</small></div>
+            <div class="node">Runbook／Postmortem<small>處理步驟、事故經驗與限制</small></div>
+            <div class="node">CMDB／服務目錄／SLO<small>Owner、依賴、重要度與目標</small></div>
+          </div>
+        </div>
+        <div class="arrow-down" aria-hidden="true"></div>
+
+        <div class="layer">
+          <div class="layer-head"><span class="layer-index">2</span><h3>資料與事件平台｜統一、清洗、關聯與保存</h3></div>
+          <div class="nodes">
+            <div class="node">OpenTelemetry Collector<small>收集、補欄位、遮蔽敏感資訊</small></div>
+            <div class="node">事件匯流排<small>即時事件傳遞與流量緩衝</small></div>
+            <div class="node">可觀測性儲存<small>時序、Log、Trace、稽核資料</small></div>
+            <div class="node">知識與向量索引<small>文件、工單、歷史事故的檢索</small></div>
+            <div class="node">服務依賴圖<small>上下游、版本、區域與資源關係</small></div>
+          </div>
+        </div>
+        <div class="arrow-down" aria-hidden="true"></div>
+
+        <div class="layer">
+          <div class="layer-head"><span class="layer-index">3</span><h3>偵測與 AI 分析層｜從異常到可驗證假設</h3></div>
+          <div class="nodes">
+            <div class="node">規則與 SLO 偵測<small>使用者影響與 error budget</small></div>
+            <div class="node">異常與容量預測<small>基線、季節性、趨勢與變化點</small></div>
+            <div class="node">Log 分群<small>新錯誤、錯誤暴增與代表樣本</small></div>
+            <div class="node">變更關聯分析<small>部署、設定、流量與依賴變化</small></div>
+            <div class="node">AI 根因診斷<small>證據、信心、驗證及處置計畫</small></div>
+          </div>
+        </div>
+        <div class="arrow-down" aria-hidden="true"></div>
+
+        <div class="layer">
+          <div class="layer-head"><span class="layer-index">4</span><h3>安全執行控制面｜決定是否可以動正式環境</h3></div>
+          <div class="nodes">
+            <div class="node">風險分級<small>服務重要度、影響面及可逆性</small></div>
+            <div class="node">Policy／RBAC<small>身分、環境、時間及動作限制</small></div>
+            <div class="node">審批／Dry-run<small>人工核准與執行前驗證</small></div>
+            <div class="node">Canary／限流<small>縮小範圍、避免連鎖操作</small></div>
+            <div class="node">驗證／回滾／Red Button<small>失敗即停止並恢復安全狀態</small></div>
+          </div>
+        </div>
+        <div class="arrow-down" aria-hidden="true"></div>
+
+        <div class="layer">
+          <div class="layer-head"><span class="layer-index">5</span><h3>輸出、執行與學習層｜形成完整閉環</h3></div>
+          <div class="nodes">
+            <div class="node">AI 日報與風險清單<small>優先順序、Owner 與期限</small></div>
+            <div class="node">告警與事件單<small>Pager、ChatOps、ITSM 整合</small></div>
+            <div class="node">自動化工作流程<small>K8s、Cloud、DB、Network、CI-CD</small></div>
+            <div class="node">不可竄改稽核軌跡<small>證據、決策、批准、動作與結果</small></div>
+            <div class="node">持續評估<small>正確率、成功率、回滾及人工回饋</small></div>
+          </div>
+        </div>
+        <div class="feedback">↺ 處置後重新觀測系統狀態；結果回饋偵測規則、Runbook 與 AI 評估資料集</div>
+      </div>
+    </section>
+
+    <section id="daily" class="report-section">
+      <h2>三、每日主動預防流程</h2>
+      <p class="section-intro">每日批次不是摘要昨日日誌，而是產生有期限、可指派、可追蹤的風險處置清單。</p>
+      <div class="timeline">
+        <div class="timeline-row">
+          <div class="timeline-time">01:00</div><div class="timeline-line"><span class="timeline-dot"></span></div>
+          <div class="timeline-content"><strong>收集與品質檢查</strong><br>確認資料是否完整、時間是否同步、重要服務有無 metrics／logs／traces 斷流。</div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-time">02:00</div><div class="timeline-line"><span class="timeline-dot"></span></div>
+          <div class="timeline-content"><strong>基線與趨勢分析</strong><br>比較最近 24 小時、7 天及 28 天，辨識錯誤率、延遲、資源、流量與 SLO 的異常漂移。</div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-time">03:00</div><div class="timeline-line"><span class="timeline-dot"></span></div>
+          <div class="timeline-content"><strong>預測性檢查</strong><br>預測容量耗盡，檢查憑證、配額、備份、批次工作、Pod restart、OOM、慢查詢與新型錯誤。</div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-time">04:00</div><div class="timeline-line"><span class="timeline-dot"></span></div>
+          <div class="timeline-content"><strong>根因與影響分析</strong><br>關聯近期部署、設定及依賴變化，估計影響服務、使用者範圍、發生機率及可用處置方案。</div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-time">07:30</div><div class="timeline-line"><span class="timeline-dot"></span></div>
+          <div class="timeline-content"><strong>產出每日風險報告</strong><br>依 P0～P3 排序，附證據、Owner、建議完成時間、Runbook，以及是否符合自動處置資格。</div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-time">持續</div><div class="timeline-line"><span class="timeline-dot"></span></div>
+          <div class="timeline-content"><strong>追蹤、驗證與升級</strong><br>確認處置是否完成及風險是否消失；若持續惡化，自動提高等級並通知值班人員。</div>
+        </div>
+      </div>
+      <div class="grid grid-2">
+        <article class="card">
+          <h3>日報必備欄位</h3>
+          <ul>
+            <li>風險等級、預計發生時間與信心程度</li>
+            <li>受影響服務、使用者、區域及相依系統</li>
+            <li>可點擊的原始證據與異常時間範圍</li>
+            <li>建議處置、Owner、期限與回滾方法</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>優先偵測項目</h3>
+          <ul>
+            <li>容量、磁碟、inode、連線池及 queue 耗盡</li>
+            <li>憑證／Token 過期、備份失敗與配額不足</li>
+            <li>新型錯誤、錯誤暴增、慢查詢與延遲漂移</li>
+            <li>部署後退化、OOM、CrashLoop 與失敗批次</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="realtime" class="report-section">
+      <h2>四、即時事件處理流程</h2>
+      <p class="section-intro">即時流程的目標，是用最少的告警、最完整的證據及最安全的動作，縮短從發現到緩解的時間。</p>
+      <div class="flow" aria-label="即時事件處理七步驟">
+        <div class="flow-step"><strong>1. 偵測</strong>症狀告警、SLO 或異常事件</div>
+        <div class="flow-step"><strong>2. 去重</strong>合併相同事故的告警風暴</div>
+        <div class="flow-step"><strong>3. 蒐證</strong>查詢遙測、變更與拓樸</div>
+        <div class="flow-step"><strong>4. 診斷</strong>根因假設及驗證步驟</div>
+        <div class="flow-step"><strong>5. 決策</strong>風險、Policy 與授權</div>
+        <div class="flow-step"><strong>6. 處置</strong>Canary 執行或人工核准</div>
+        <div class="flow-step"><strong>7. 驗證</strong>觀察 SLO，成功結案或回滾</div>
+      </div>
+      <div class="callout"><strong>告警原則：</strong>優先針對使用者症狀、SLO 與可採取行動的問題告警；內部資源指標主要用於診斷及預防容量瞬間耗盡。</div>
+    </section>
+
+    <section id="ai" class="report-section">
+      <h2>五、AI 分析與自動化成熟度</h2>
+      <div class="grid grid-2">
+        <article class="card">
+          <h3>正確的 AI 分工</h3>
+          <ul>
+            <li><strong>數值異常：</strong>統計基線、季節性及變化點偵測</li>
+            <li><strong>容量風險：</strong>時間序列預測</li>
+            <li><strong>Log：</strong>模板抽取、分群及新型錯誤辨識</li>
+            <li><strong>根因：</strong>拓樸、時間及變更關聯</li>
+            <li><strong>知識：</strong>RAG 檢索 Runbook、工單及事故</li>
+            <li><strong>LLM：</strong>整合證據、提出假設及處置計畫</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>不應交給 LLM 的工作</h3>
+          <ul>
+            <li>直接閱讀全部原始 Log 後自行猜測</li>
+            <li>未通過 Policy 就產生正式環境變更</li>
+            <li>執行任意 shell 或自由組合破壞性命令</li>
+            <li>以模型信心取代 dry-run、驗證及回滾</li>
+            <li>只提供結論而沒有證據與資料來源</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>等級</th><th>監控與調查</th><th>正式環境處置</th><th>建議使用時機</th></tr></thead>
+          <tbody>
+            <tr><td class="level">L0 人工</td><td>工具提供資料，由人員分析</td><td>全部人工</td><td>資料與流程尚未標準化</td></tr>
+            <tr><td class="level safe">L1 輔助</td><td>AI 自動蒐證、診斷與建議</td><td>人員手動執行</td><td>第一階段 MVP；先驗證 AI 品質</td></tr>
+            <tr><td class="level warn">L2 部分自主</td><td>AI 產生完整處置計畫</td><td>人工核准後由平台執行</td><td>Runbook 已標準化且可回滾</td></tr>
+            <tr><td class="level warn">L3 高度自動</td><td>AI 自動調查與決策</td><td>低風險情境自動執行</td><td>高成功率、低影響面、具明確護欄</td></tr>
+            <tr><td class="level danger">L4 完全自主</td><td>完整閉環</td><td>系統自主處理</td><td>僅限封閉、成熟、充分驗證的範圍</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="safety" class="report-section">
+      <h2>六、安全執行控制</h2>
+      <p class="section-intro">AI 不直接連線正式環境。它只能向安全執行閘道提交結構化計畫，由確定性的政策與工作流程決定是否允許執行。</p>
+      <div class="grid grid-3">
+        <article class="card">
+          <h3>身分與權限</h3>
+          <ul class="checklist">
+            <li>AI 使用獨立機器身分</li>
+            <li>預設唯讀、最小權限</li>
+            <li>使用短效憑證</li>
+            <li>人員與 Agent 權限分離</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>執行護欄</h3>
+          <ul class="checklist">
+            <li>白名單與參數化工具</li>
+            <li>前置條件與 dry-run</li>
+            <li>Canary、範圍及頻率限制</li>
+            <li>成功條件、逾時與回滾</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>治理與稽核</h3>
+          <ul class="checklist">
+            <li>不可竄改的決策軌跡</li>
+            <li>高風險雙人核准</li>
+            <li>全域緊急停止按鈕</li>
+            <li>Prompt injection 防護</li>
+          </ul>
+        </article>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>適合優先自動化</th><th>早期不應全自動</th></tr></thead>
+          <tbody>
+            <tr><td>唯讀診斷、資料蒐集、健康檢查</td><td>刪除正式資料或永久資源</td></tr>
+            <tr><td>重啟明確失效的無狀態工作負載</td><td>資料庫 schema 或大量資料修改</td></tr>
+            <tr><td>在既定上限內擴容或切換健康節點</td><td>權限、防火牆及金鑰的大範圍變更</td></tr>
+            <tr><td>回滾剛部署且健康檢查失敗的版本</td><td>跨區域、大規模流量或不可逆操作</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="roadmap" class="report-section">
+      <h2>七、六個月落地路線</h2>
+      <div class="roadmap">
+        <div class="month"><strong>第 1 月<br>資料基礎</strong>服務目錄、Owner、拓樸、SLO、Telemetry 欄位、資料遮蔽。</div>
+        <div class="month"><strong>第 2 月<br>預防 MVP</strong>每日趨勢、容量、憑證、備份、錯誤分析及 AI 日報。</div>
+        <div class="month"><strong>第 3 月<br>即時診斷</strong>告警去重、事件時間線、變更關聯與根因假設。</div>
+        <div class="month"><strong>第 4 月<br>安全閘道</strong>Policy、RBAC、審批、dry-run、驗證與稽核。</div>
+        <div class="month"><strong>第 5 月<br>L2 執行</strong>將 Runbook 工作流程化，進行 shadow mode 與故障演練。</div>
+        <div class="month"><strong>第 6 月<br>有限 L3</strong>開放低風險情境，自動降級、回滾及持續評估。</div>
+      </div>
+
+      <h3 style="margin-top: 2rem;">建議第一版範圍</h3>
+      <div class="grid grid-2">
+        <article class="card">
+          <h3>服務與資料</h3>
+          <ul>
+            <li>選擇 5～10 個重要且已有監控的服務</li>
+            <li>接入 metrics、logs、traces、部署及事件單</li>
+            <li>建立 owner、SLO、依賴及 Runbook</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>可交付能力</h3>
+          <ul>
+            <li>一份每日主動風險報告</li>
+            <li>即時事件證據包與根因建議</li>
+            <li>三個需要人工批准的自動 Runbook</li>
+          </ul>
+        </article>
+      </div>
+
+      <h3 style="margin-top: 2rem;">參考技術組合</h3>
+      <p>
+        <span class="tag">OpenTelemetry</span><span class="tag">Fluent Bit</span>
+        <span class="tag">Prometheus</span><span class="tag">Mimir／Thanos</span>
+        <span class="tag">Loki／OpenSearch</span><span class="tag">Tempo／Jaeger</span>
+        <span class="tag">Grafana</span><span class="tag">Kafka／NATS</span>
+        <span class="tag">Argo Workflows／AWX／Rundeck</span><span class="tag">OPA</span>
+      </p>
+      <p class="section-intro">技術選型應優先沿用現有監控及自動化投資；第一階段通常不需要更換整套 Prometheus、Elastic、Grafana、Jenkins 或 Kubernetes。</p>
+    </section>
+
+    <section id="kpi" class="report-section">
+      <h2>八、成效指標與上線門檻</h2>
+      <div class="grid grid-3">
+        <article class="card"><h3>可靠性</h3><ul><li>異常提前發現時間</li><li>MTTD／MTTM／MTTR</li><li>SLO 與 error budget 改善</li></ul></article>
+        <article class="card"><h3>AI 品質</h3><ul><li>根因建議採納率</li><li>誤判與漏判率</li><li>證據完整度與人工評分</li></ul></article>
+        <article class="card"><h3>自動化安全</h3><ul><li>成功率與回滾率</li><li>未授權操作數必須為零</li><li>告警量與人工工時下降</li></ul></article>
+      </div>
+      <div class="callout"><strong>升級原則：</strong>每個自動處置情境應獨立累積 shadow mode、人工核准及實際結果；只有達成組織設定的成功率、低回滾率與零越權門檻，才從 L2 升為 L3。</div>
+
+      <h3 style="margin-top: 2rem;">開始前需要完成的決策</h3>
+      <ul class="checklist">
+        <li>確認第一批納管服務、服務重要度、Owner 與 SLO。</li>
+        <li>盤點現有 Prometheus、Grafana、Elastic、Cloud、Kubernetes 與 ITSM。</li>
+        <li>選定三個低風險 Runbook，定義成功條件、逾時及回滾。</li>
+        <li>定義正式環境 AI 身分、Policy、批准流程及稽核保存期限。</li>
+        <li>建立事故與處置的 Golden Dataset，供離線評估及回歸測試。</li>
+      </ul>
+    </section>
+
+    <section class="report-section sources">
+      <h2>參考資料</h2>
+      <ol>
+        <li><a href="https://opentelemetry.io/docs/collector/">OpenTelemetry Collector 官方文件</a>－統一接收、處理與輸出 telemetry。</li>
+        <li><a href="https://sre.google/resources/practices-and-processes/incident-management-guide/">Google SRE Incident Management Guide</a>－告警、事件處理及事後學習。</li>
+        <li><a href="https://sre.google/resources/practices-and-processes/ai-engineering-reliable-operations/">Google SRE: AI Engineering for Reliable Operations</a>－AI 維運自主等級與安全執行設計。</li>
+        <li><a href="https://www.openpolicyagent.org/docs">Open Policy Agent 官方文件</a>－Policy-as-code 與政策決策。</li>
+        <li><a href="https://kubernetes.io/docs/concepts/cluster-administration/observability/">Kubernetes Observability 官方文件</a>－Metrics、logs 與 traces 可觀測性架構。</li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="page">AI DevOps 全自動維運平台規劃報告｜可直接以瀏覽器開啟、列印或另存 PDF</footer>
+</body>
+</html>

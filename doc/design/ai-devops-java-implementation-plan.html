@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="以 Java、Qwen 與商用推理模型建構 AI DevOps 平台的詳細實施計畫">
+  <title>AI DevOps 平台 Java 實施與多模型協作計畫</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg:#f3f6fa; --surface:#fff; --surface2:#edf2f7; --text:#162131; --muted:#526173;
+      --line:#d5dee8; --blue:#075985; --blue2:#e0f2fe; --green:#166534; --green2:#dcfce7;
+      --amber:#92400e; --amber2:#fef3c7; --red:#991b1b; --red2:#fee2e2; --violet:#6b21a8;
+      --violet2:#f3e8ff; --shadow:0 10px 30px rgba(15,23,42,.08);
+    }
+    @media(prefers-color-scheme:dark){:root{
+      --bg:#09111f; --surface:#111c2b; --surface2:#192638; --text:#edf4fb; --muted:#b7c4d2;
+      --line:#33465b; --blue:#7dd3fc; --blue2:#16384d; --green:#86efac; --green2:#173b2b;
+      --amber:#fcd34d; --amber2:#493719; --red:#fca5a5; --red2:#4b2026; --violet:#d8b4fe;
+      --violet2:#39214b; --shadow:0 10px 30px rgba(0,0,0,.28);
+    }}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+      font-size:17px;line-height:1.72} a{color:var(--blue);text-underline-offset:3px} h1,h2,h3,h4{line-height:1.28;letter-spacing:-.018em}
+    h1{margin:0;font-size:clamp(2.15rem,5vw,4.2rem)} h2{margin:0 0 1rem;font-size:clamp(1.6rem,3vw,2.4rem)}
+    h3{margin:0 0 .65rem;font-size:1.23rem} h4{margin:.6rem 0 .35rem;font-size:1rem} p{margin:.55rem 0 1rem}
+    ul,ol{padding-left:1.3rem} li+li{margin-top:.3rem} code{padding:.08rem .32rem;border:1px solid var(--line);border-radius:.35rem;background:var(--surface2);font-size:.9em}
+    pre{overflow:auto;padding:1rem;border:1px solid var(--line);border-radius:14px;background:var(--surface2);font-size:.88rem;line-height:1.55}
+    .page{width:min(1500px,calc(100% - 30px));margin-inline:auto}.hero{margin-top:22px;padding:clamp(30px,7vw,82px);border:1px solid var(--line);
+      border-radius:28px;background:radial-gradient(circle at 88% 14%,var(--violet2),transparent 28%),radial-gradient(circle at 72% 84%,var(--blue2),transparent 26%),var(--surface);box-shadow:var(--shadow)}
+    .eyebrow{display:inline-block;margin-bottom:1rem;padding:.28rem .72rem;border-radius:999px;background:var(--blue2);color:var(--blue);font-weight:800;letter-spacing:.05em}
+    .lead{max-width:1000px;margin-top:1.2rem;color:var(--muted);font-size:1.22rem}.meta{display:flex;flex-wrap:wrap;gap:.5rem 1.4rem;margin-top:1.4rem;color:var(--muted)}
+    .print{margin-top:1.35rem;padding:.58rem 1rem;border:1px solid var(--blue);border-radius:.7rem;background:var(--blue);color:var(--bg);font:inherit;font-weight:700;cursor:pointer}
+    .toc{position:sticky;top:0;z-index:10;margin-top:16px;padding:.75rem 1rem;border:1px solid var(--line);border-radius:15px;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(14px);box-shadow:var(--shadow)}
+    .toc ul{display:flex;flex-wrap:wrap;gap:.35rem 1rem;margin:0;padding:0;list-style:none}.toc a{text-decoration:none;font-weight:700;font-size:.9rem}
+    .section{margin:24px 0;padding:clamp(22px,4vw,48px);border:1px solid var(--line);border-radius:23px;background:var(--surface);box-shadow:var(--shadow);scroll-margin-top:85px}
+    .intro{max-width:1050px;color:var(--muted)}.grid{display:grid;gap:16px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .card{padding:1.15rem;border:1px solid var(--line);border-radius:15px;background:var(--surface2)}.card p:last-child,.card ul:last-child{margin-bottom:0}
+    .badge{display:inline-block;margin-bottom:.65rem;padding:.18rem .55rem;border-radius:999px;background:var(--blue2);color:var(--blue);font-size:.84rem;font-weight:800}
+    .callout{margin-top:1.25rem;padding:1rem 1.15rem;border-left:6px solid var(--blue);border-radius:8px 14px 14px 8px;background:var(--blue2)}
+    .warning{border-left-color:var(--amber);background:var(--amber2)}.danger{border-left-color:var(--red);background:var(--red2)}
+    .table-wrap{overflow-x:auto;margin-top:1rem}table{width:100%;min-width:850px;border-collapse:collapse}th,td{padding:.78rem .82rem;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+    th{background:var(--surface2);font-size:.91rem;white-space:nowrap}tbody tr:last-child td{border-bottom:0}.yes{color:var(--green);font-weight:800}.maybe{color:var(--amber);font-weight:800}.no{color:var(--red);font-weight:800}
+    .stack{display:grid;gap:0;margin-top:1.4rem;padding:clamp(12px,3vw,26px);border:2px solid var(--line);border-radius:20px;background:var(--bg)}
+    .layer{padding:1.05rem;border-radius:15px;background:var(--surface)}.layer-title{display:flex;align-items:center;gap:.75rem;margin-bottom:.85rem}.layer-title span{display:grid;place-items:center;width:2.4rem;height:2.4rem;border-radius:11px;background:var(--blue);color:var(--bg);font-weight:900;flex:0 0 auto}.layer-title h3{margin:0;font-size:1.3rem}
+    .nodes{display:grid;grid-template-columns:repeat(4,minmax(170px,1fr));gap:11px}.node{min-height:94px;padding:.82rem;border:1px solid var(--line);border-radius:12px;background:var(--surface2);font-weight:750;line-height:1.4}.node small{display:block;margin-top:.3rem;color:var(--muted);font-weight:500}
+    .down{position:relative;width:4px;height:42px;margin:auto;background:var(--blue)}.down:after{content:"";position:absolute;bottom:0;left:50%;width:13px;height:13px;border-right:4px solid var(--blue);border-bottom:4px solid var(--blue);transform:translateX(-50%) rotate(45deg)}
+    .model-flow{display:grid;grid-template-columns:1fr 54px 1fr 54px 1fr 54px 1fr;align-items:stretch;gap:8px;margin-top:1.3rem}.model-box{padding:1rem;border:2px solid var(--line);border-radius:16px;background:var(--surface2)}
+    .model-box.local{border-color:var(--green)}.model-box.reason{border-color:var(--violet)}.model-box.det{border-color:var(--blue)}.model-box.human{border-color:var(--amber)}.model-arrow{display:grid;place-items:center;color:var(--blue);font-size:1.7rem;font-weight:900}
+    .state{display:inline-block;margin:.1rem .2rem .1rem 0;padding:.15rem .48rem;border:1px solid var(--line);border-radius:999px;font-size:.82rem;background:var(--surface)}
+    .steps{counter-reset:phase;display:grid;gap:14px;margin-top:1.2rem}.phase{display:grid;grid-template-columns:72px 1fr;gap:16px}.phase-num{display:grid;place-items:center;align-self:start;width:58px;height:58px;border-radius:16px;background:var(--blue);color:var(--bg);font-size:1.35rem;font-weight:900}.phase-body{padding:1.05rem 1.15rem;border:1px solid var(--line);border-radius:15px;background:var(--surface2)}
+    .phase-meta{display:flex;flex-wrap:wrap;gap:.35rem .8rem;margin-bottom:.55rem;color:var(--muted);font-size:.9rem}.phase-body h3{margin-bottom:.45rem}.columns{display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:15px}.mini-title{color:var(--blue);font-size:.86rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+    .api-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.api{padding:.8rem;border:1px solid var(--line);border-radius:12px;background:var(--surface2)}.method{display:inline-block;min-width:58px;margin-right:.4rem;color:var(--blue);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:900}
+    .check{list-style:none;padding:0}.check li{position:relative;padding:.34rem 0 .34rem 1.75rem}.check li:before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:900}
+    footer{padding:4px 0 44px;color:var(--muted);text-align:center;font-size:.92rem}
+    @media(max-width:1100px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.nodes{grid-template-columns:repeat(2,minmax(170px,1fr))}.model-flow{grid-template-columns:1fr}.model-arrow{min-height:30px}.model-arrow:after{content:"↓"}.model-arrow{font-size:0}.columns{grid-template-columns:1fr}}
+    @media(max-width:720px){body{font-size:16px}.page{width:calc(100% - 18px)}.hero{padding:27px 20px;border-radius:20px}.toc{position:static}.toc ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.section{padding:23px 17px;border-radius:18px}.g2,.g3,.g4,.nodes,.api-grid{grid-template-columns:1fr}.phase{grid-template-columns:48px 1fr;gap:9px}.phase-num{width:44px;height:44px;border-radius:12px;font-size:1rem}}
+    @media print{body{font-size:10.5pt}.page{width:100%}.hero,.section{box-shadow:none;break-inside:avoid}.toc,.print{display:none}.nodes{grid-template-columns:repeat(4,1fr)}.model-flow{grid-template-columns:1fr 32px 1fr 32px 1fr 32px 1fr}.model-arrow{font-size:1.2rem}.model-arrow:after{content:""}.section{margin:12px 0}.card,.phase-body{break-inside:avoid}a{color:inherit;text-decoration:none}}
+  </style>
+</head>
+<body>
+  <header class="page hero">
+    <span class="eyebrow">IMPLEMENTATION PLAN · JAVA · MULTI-MODEL AIOPS</span>
+    <h1>AI DevOps 平台<br>Java 實施與多模型協作計畫</h1>
+    <p class="lead">以自架 Qwen 處理低風險、可明確檢查的工作；以商用高推理模型處理跨系統根因分析與規劃；以確定性程式負責驗證、授權、執行及回滾。平台支援處理中的模型切換、人工接管及完整稽核。</p>
+    <div class="meta"><span>版本：2.0</span><span>日期：2026-09-03</span><span>開發標準：Java／Spring</span><span>目標：24 週 MVP，36～48 週有限 L3</span></div>
+    <button class="print" type="button" onclick="window.print()">列印或另存 PDF</button>
+  </header>
+
+  <nav class="page toc" aria-label="目錄"><ul>
+    <li><a href="#principle">設計結論</a></li><li><a href="#architecture">目標架構</a></li><li><a href="#models">模型協作</a></li>
+    <li><a href="#software">軟體選型</a></li><li><a href="#custom">自行開發</a></li><li><a href="#api">API 設計</a></li>
+    <li><a href="#phases">推進步驟</a></li><li><a href="#java">Java 工程</a></li><li><a href="#testing">驗收測試</a></li>
+  </ul></nav>
+
+  <main class="page">
+    <section id="principle" class="section">
+      <h2>一、核心設計結論</h2>
+      <p class="intro">系統應採「雙模型＋確定性安全引擎」，而不是讓兩個大模型互相投票。兩個模型都可能產生幻覺，只有可重現的查詢、規則、測試及即時系統狀態能成為最終驗證依據。</p>
+      <div class="grid g4">
+        <article class="card"><span class="badge">LOCAL MODEL</span><h3>自架 Qwen</h3><p>分類、摘要、格式化、既有 Runbook 對應、Log 群組命名及低風險唯讀工具使用。</p></article>
+        <article class="card"><span class="badge">REASONING MODEL</span><h3>商用高推理模型</h3><p>未知事故、跨服務因果分析、多個互斥假設、風險權衡及多步處置規劃。</p></article>
+        <article class="card"><span class="badge">DETERMINISTIC</span><h3>確定性安全引擎</h3><p>統計、資料查詢、Schema 檢查、Policy、dry-run、執行後檢查、回滾及限流。</p></article>
+        <article class="card"><span class="badge">HUMAN CONTROL</span><h3>人員控制</h3><p>高風險批准、模型手動切換、緊急停止、例外處理及事故指揮。</p></article>
+      </div>
+      <div class="callout"><strong>重要界線：</strong>Qwen 可以協助產生「驗證步驟」，但驗證結果必須由程式執行 PromQL、SQL、OpenSearch 查詢、Kubernetes API 或健康檢查後判定；不能由 Qwen 自己宣告驗證成功。</div>
+    </section>
+
+    <section id="architecture" class="section">
+      <h2>二、目標技術架構</h2>
+      <p class="intro">Java 控制面保存所有案件、證據、模型路由、批准與行動狀態；外部開源系統各自提供專業能力，透過 API 或事件整合。</p>
+      <div class="stack" role="img" aria-label="AI DevOps Java 平台六層架構">
+        <div class="layer"><div class="layer-title"><span>1</span><h3>入口與系統脈絡</h3></div><div class="nodes">
+          <div class="node">Alert／Webhook／API<small>告警、工單、ChatOps 與人工請求</small></div><div class="node">Telemetry<small>Metrics、logs、traces、events、audit</small></div>
+          <div class="node">Change Events<small>Git、CI-CD、配置、雲端與部署變更</small></div><div class="node">Service Catalog<small>Owner、SLO、依賴、重要度與 Runbook</small></div>
+        </div></div><div class="down"></div>
+        <div class="layer"><div class="layer-title"><span>2</span><h3>資料與事件底座</h3></div><div class="nodes">
+          <div class="node">OpenTelemetry Collector<small>統一收集、補欄位、過濾及傳送</small></div><div class="node">Kafka／Strimzi<small>事件解耦、重播、順序及外部 HTTP Bridge</small></div>
+          <div class="node">Prometheus／OpenSearch／Jaeger<small>時序、Log、搜尋與 Trace</small></div><div class="node">PostgreSQL＋pgvector<small>交易狀態、案件、RAG 與稽核索引</small></div>
+        </div></div><div class="down"></div>
+        <div class="layer"><div class="layer-title"><span>3</span><h3>Java AIOps 控制面</h3></div><div class="nodes">
+          <div class="node">Incident & Evidence<small>標準化事件、證據包與時間線</small></div><div class="node">Analysis Engine<small>規則、SLO、統計、異常及容量預測</small></div>
+          <div class="node">Model Control Plane<small>Qwen、商用模型、切換、降級與成本</small></div><div class="node">Action Gateway<small>風險、批准、Policy、執行、驗證與回滾</small></div>
+        </div></div><div class="down"></div>
+        <div class="layer"><div class="layer-title"><span>4</span><h3>模型與知識服務</h3></div><div class="nodes">
+          <div class="node">Qwen＋vLLM<small>公司內網 OpenAI-compatible API</small></div><div class="node">Commercial Provider Adapters<small>至少一主一備，可在案件中途接管</small></div>
+          <div class="node">RAG & Evidence Builder<small>只提供授權、最新且可引用的內容</small></div><div class="node">Data Egress Gateway<small>遮蔽、分級、最小化及對外稽核</small></div>
+        </div></div><div class="down"></div>
+        <div class="layer"><div class="layer-title"><span>5</span><h3>耐久工作流程與安全政策</h3></div><div class="nodes">
+          <div class="node">Temporal<small>調查、等待批准、模型接管與長時間驗證</small></div><div class="node">OPA<small>Policy-as-code 與執行授權判斷</small></div>
+          <div class="node">Keycloak／OpenBao<small>OIDC、機器身分、短效憑證與秘密</small></div><div class="node">Immutable Audit<small>輸入、證據、模型、決策、批准與結果</small></div>
+        </div></div><div class="down"></div>
+        <div class="layer"><div class="layer-title"><span>6</span><h3>受控執行與呈現</h3></div><div class="nodes">
+          <div class="node">Argo Workflows<small>Kubernetes 工作、診斷與批次流程</small></div><div class="node">AWX<small>主機、網路、Legacy 與 Ansible Runbook</small></div>
+          <div class="node">Argo CD<small>GitOps 部署、同步與受控回滾</small></div><div class="node">Grafana／AIOps UI<small>證據、調查、模型切換、批准及日報</small></div>
+        </div></div>
+      </div>
+    </section>
+
+    <section id="models" class="section">
+      <h2>三、多模型分工、切換與接管</h2>
+      <div class="model-flow">
+        <article class="model-box local"><h3>Qwen 初步處理</h3><p>低成本、資料不離開公司、唯讀工具與可驗證輸出。</p><span class="state">分類</span><span class="state">摘要</span><span class="state">Runbook 對應</span></article>
+        <div class="model-arrow">→</div>
+        <article class="model-box reason"><h3>商用模型接管</h3><p>低信心、未知模式、跨系統推理、多方案比較或人員指定。</p><span class="state">RCA</span><span class="state">假設比較</span><span class="state">規劃</span></article>
+        <div class="model-arrow">→</div>
+        <article class="model-box det"><h3>確定性驗證</h3><p>Schema、Evidence ID、Policy、dry-run、查詢、SLO 與 postcondition。</p><span class="state">允許</span><span class="state">拒絕</span><span class="state">重新規劃</span></article>
+        <div class="model-arrow">→</div>
+        <article class="model-box human"><h3>人工決策</h3><p>高風險、無法驗證、模型意見衝突、處置惡化或超出安全邊界。</p><span class="state">批准</span><span class="state">換模型</span><span class="state">停止</span></article>
+      </div>
+
+      <h3 style="margin-top:1.8rem">任務分派矩陣</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>任務</th><th>Qwen</th><th>商用推理模型</th><th>確定性程式</th><th>人工</th></tr></thead>
+        <tbody>
+          <tr><td>告警分類、摘要、相似 Runbook</td><td class="yes">主要</td><td>備援</td><td>Schema／證據檢查</td><td>抽樣評估</td></tr>
+          <tr><td>固定統計、SLO、容量與異常分數</td><td>解釋結果</td><td>解釋複雜關係</td><td class="yes">唯一計算來源</td><td>設定門檻</td></tr>
+          <tr><td>未知事故與跨服務根因分析</td><td>先行整理證據</td><td class="yes">主要</td><td>驗證引用與查詢</td><td>重大事故指揮</td></tr>
+          <tr><td>多步處置計畫</td><td>已知 Runbook 可用</td><td class="yes">主要</td><td>轉為型別化 ActionPlan</td><td>風險批准</td></tr>
+          <tr><td>正式環境執行</td><td class="no">禁止直接執行</td><td class="no">禁止直接執行</td><td class="yes">Action Gateway</td><td>依風險批准</td></tr>
+          <tr><td>成功判定與回滾</td><td>可產生說明</td><td>失敗後重新分析</td><td class="yes">唯一判定來源</td><td>處理例外</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 style="margin-top:1.8rem">自動或手動切換模型的條件</h3>
+      <div class="grid g3">
+        <article class="card"><h3>技術失敗</h3><ul><li>Timeout、HTTP 429／5xx</li><li>供應商 circuit breaker 開啟</li><li>回傳非預期格式或無法解析</li><li>模型服務健康檢查失敗</li></ul></article>
+        <article class="card"><h3>品質失敗</h3><ul><li>引用不存在的 Evidence ID</li><li>與確定性數據矛盾</li><li>低於信心或完整度門檻</li><li>重複工具呼叫且沒有進展</li></ul></article>
+        <article class="card"><h3>操作失敗</h3><ul><li>人員按下「切換模型」</li><li>dry-run 或 precondition 失敗</li><li>執行後 SLO 惡化</li><li>自動回滾後升級高模型／人工</li></ul></article>
+      </div>
+      <div class="callout warning"><strong>切換規則：</strong>唯讀調查可以在保存 Evidence Package 後直接換模型；只要已產生待執行計畫或正式環境正在變更，就先暫停工作流程，新模型必須重新產生 ActionPlan、重新通過 OPA，必要時重新取得人工批准。</div>
+
+      <h3 style="margin-top:1.8rem">模型無關的案件交接包</h3>
+      <pre><code>InvestigationPackage {
+  caseId, serviceId, severity, dataClassification,
+  alertSummary, metricFacts[], logClusters[], traceExemplars[],
+  serviceGraphSnapshot, changeTimeline[], retrievedRunbooks[],
+  evidenceLedger[{ evidenceId, source, query, timestamp, hash }],
+  hypotheses[], actionsAlreadyTaken[], validationResults[],
+  policyConstraints[], prohibitedActions[], requiredOutputSchema
+}</code></pre>
+      <p class="intro">不要把供應商專屬聊天紀錄當成案件狀態。切換模型時只提供可稽核的事實、必要摘要及已執行動作，避免把前一個模型的錯誤推理當成事實傳遞。</p>
+    </section>
+
+    <section id="software" class="section">
+      <h2>四、建議開源軟體與整合方式</h2>
+      <p class="intro">以下為推薦預設組合。若公司已經有同類平台，優先整合既有系統，不應為了 AI 專案重建整套監控。</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>領域</th><th>推薦軟體</th><th>用途</th><th>外部介面</th><th>Java 整合</th><th>採用建議</th></tr></thead>
+        <tbody>
+          <tr><td>Java 平台</td><td>Java 21 LTS＋Spring Boot 4.x</td><td>控制面、API、Adapter 與 Action Gateway</td><td>REST／OpenAPI／SSE</td><td>核心標準</td><td class="yes">採用</td></tr>
+          <tr><td>模組化</td><td>Spring Modulith</td><td>先做模組化單體，驗證邊界後再拆服務</td><td>模組事件</td><td>原生</td><td class="yes">採用</td></tr>
+          <tr><td>AI 整合</td><td>Spring AI</td><td>多 Provider、RAG、Tool、Structured Output、MCP</td><td>Model API／MCP</td><td>原生</td><td class="yes">採用</td></tr>
+          <tr><td>Qwen Serving</td><td>vLLM</td><td>自架 Qwen 推論與擴展</td><td>OpenAI-compatible REST</td><td>Spring AI OpenAI Adapter</td><td class="yes">採用</td></tr>
+          <tr><td>工作流程</td><td>Temporal</td><td>長時間調查、等待批准、重試、模型切換及回滾狀態</td><td>gRPC／Java SDK</td><td>官方 Java SDK／Spring Starter</td><td class="yes">採用</td></tr>
+          <tr><td>Telemetry</td><td>OpenTelemetry Collector</td><td>統一收集與資料處理</td><td>OTLP gRPC／HTTP</td><td>OTel Java Agent／SDK</td><td class="yes">採用</td></tr>
+          <tr><td>Metrics／Alert</td><td>Prometheus＋Alertmanager</td><td>PromQL、SLO、規則、告警聚合與 webhook</td><td>HTTP API／Webhook</td><td>WebClient 或產生式 Client</td><td class="yes">採用</td></tr>
+          <tr><td>Logs／搜尋</td><td>OpenSearch</td><td>集中 Log、全文搜尋、異常偵測、可選向量搜尋</td><td>REST API</td><td>官方 OpenSearch Java Client</td><td class="yes">採用</td></tr>
+          <tr><td>Tracing</td><td>Jaeger</td><td>Trace 查詢與服務依賴證據</td><td>OTLP／Query API</td><td>OTel Java</td><td class="yes">採用</td></tr>
+          <tr><td>視覺化</td><td>Grafana</td><td>Dashboard、告警、證據連結</td><td>HTTP／OpenAPI</td><td>WebClient／OpenAPI Client</td><td class="yes">採用</td></tr>
+          <tr><td>事件平台</td><td>Kafka＋Strimzi</td><td>事件流、重播、解耦及順序</td><td>Kafka Protocol；HTTP Bridge</td><td>Spring for Apache Kafka</td><td class="yes">採用</td></tr>
+          <tr><td>交易／RAG</td><td>PostgreSQL＋pgvector</td><td>案件、批准、稽核索引及知識向量</td><td>JDBC／SQL</td><td>Spring Data JDBC/JPA、Spring AI</td><td class="yes">採用</td></tr>
+          <tr><td>服務目錄</td><td>Backstage Catalog</td><td>Owner、SLO、依賴、API、Runbook 與重要度</td><td>JSON REST／OpenAPI</td><td>WebClient／生成 Client</td><td class="yes">採用</td></tr>
+          <tr><td>政策</td><td>Open Policy Agent</td><td>風險與執行授權 Policy-as-code</td><td>REST／Wasm</td><td>REST；決策結果存稽核</td><td class="yes">採用</td></tr>
+          <tr><td>身分</td><td>Keycloak</td><td>OIDC、OAuth2、使用者與機器身分</td><td>OIDC／Admin REST</td><td>Spring Security Resource Server</td><td class="yes">採用</td></tr>
+          <tr><td>秘密管理</td><td>OpenBao</td><td>商用模型金鑰、工具憑證及短效 Token</td><td>REST API</td><td>Spring WebClient／Agent</td><td class="yes">採用</td></tr>
+          <tr><td>K8s 執行</td><td>Argo Workflows</td><td>診斷、批次與 Kubernetes Runbook</td><td>REST／gRPC／OpenAPI</td><td>REST 或 Java Client</td><td class="maybe">K8s 環境採用</td></tr>
+          <tr><td>主機／Legacy</td><td>AWX</td><td>Ansible 工作、主機、網路設備與舊系統</td><td>REST API</td><td>WebClient／OpenAPI</td><td class="maybe">有 Ansible 時採用</td></tr>
+          <tr><td>GitOps</td><td>Argo CD</td><td>部署同步、版本狀態及受控回滾</td><td>REST／gRPC／Swagger</td><td>WebClient／生成 Client</td><td class="maybe">K8s GitOps 採用</td></tr>
+          <tr><td>故障隔離</td><td>Resilience4j</td><td>各模型供應商的 timeout、retry、bulkhead、rate limit、circuit breaker</td><td>Java Library</td><td>原生</td><td class="yes">採用</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout warning"><strong>授權注意：</strong>開源不代表沒有企業義務。Grafana 等部分元件採 AGPL；各 Qwen 模型權重也可能有不同授權條款。正式採購前應由法務依實際版本、部署方式及是否修改／對外提供服務確認。</div>
+    </section>
+
+    <section id="custom" class="section">
+      <h2>五、需要自行開發的專用功能</h2>
+      <p class="intro">現成軟體可以提供資料、工作流程與執行能力，但「如何判斷、如何切換模型、哪些動作安全」屬於公司的維運知識，必須自行開發。</p>
+      <div class="grid g3">
+        <article class="card"><span class="badge">P0</span><h3>事件正規化與證據帳本</h3><p>統一不同告警格式；每項事實保存查詢、時間、來源、hash、權限與 Evidence ID，所有模型結論必須引用。</p></article>
+        <article class="card"><span class="badge">P0</span><h3>Model Router & Handoff</h3><p>依任務、風險、資料分級、能力、成本與健康度路由；支援案件中途自動／手動切換及完整交接。</p></article>
+        <article class="card"><span class="badge">P0</span><h3>輸出品質閘門</h3><p>JSON Schema、必填欄位、Evidence ID、矛盾檢查、重複迴圈、工具參數及信心門檻。</p></article>
+        <article class="card"><span class="badge">P0</span><h3>Data Egress Gateway</h3><p>商用模型呼叫前做資料分類、欄位白名單、秘密／個資遮蔽、內容最小化、Token 上限與完整稽核。</p></article>
+        <article class="card"><span class="badge">P0</span><h3>Action Gateway</h3><p>模型只能提交型別化 ActionPlan；閘道負責 Policy、批准、dry-run、互斥鎖、執行、驗證、取消與回滾。</p></article>
+        <article class="card"><span class="badge">P0</span><h3>Tool Adapter SDK</h3><p>所有工具實作一致的 discover、plan、dryRun、execute、verify、rollback、cancel 介面及冪等鍵。</p></article>
+        <article class="card"><span class="badge">P1</span><h3>固定分析引擎</h3><p>SLO、rolling median/MAD、EWMA、季節基線、容量回歸、部署前後比較，不以 LLM 進行數學計算。</p></article>
+        <article class="card"><span class="badge">P1</span><h3>調查與批准 UI</h3><p>顯示證據、模型、成本、假設、計畫、Policy 結果；提供切換模型、批准、拒絕、暫停及 Red Button。</p></article>
+        <article class="card"><span class="badge">P1</span><h3>評估與回歸框架</h3><p>以歷史事故 Golden Dataset 重播，評估根因、證據、計畫、安全、成本、延遲及模型切換結果。</p></article>
+      </div>
+    </section>
+
+    <section id="api" class="section">
+      <h2>六、外部 API 與工具合約</h2>
+      <p class="intro">REST／OpenAPI 給人員與外部系統；Kafka／AsyncAPI 給事件；MCP 只作為 AI 可發現工具的標準介面。MCP 不取代 Action Gateway 的安全控制。</p>
+      <div class="api-grid">
+        <div class="api"><span class="method">POST</span><code>/api/v1/events</code><br>送入部署、配置、雲端或自訂事件；必須支援 Idempotency-Key。</div>
+        <div class="api"><span class="method">POST</span><code>/api/v1/investigations</code><br>建立調查並指定 service、severity、起始 evidence。</div>
+        <div class="api"><span class="method">GET</span><code>/api/v1/investigations/{id}</code><br>取得狀態、證據、模型、假設、Token／成本與目前計畫。</div>
+        <div class="api"><span class="method">POST</span><code>/api/v1/investigations/{id}/model-handoffs</code><br>手動指定 Qwen、商用 Provider 或人工接管並填寫原因。</div>
+        <div class="api"><span class="method">POST</span><code>/api/v1/investigations/{id}/pause</code><br>暫停工具呼叫及模型迴圈，不中止案件資料。</div>
+        <div class="api"><span class="method">GET</span><code>/api/v1/investigations/{id}/events</code><br>以 SSE 提供調查、切換、批准與執行進度。</div>
+        <div class="api"><span class="method">POST</span><code>/api/v1/action-plans/{id}/approve</code><br>帶入批准人、範圍、有效期及附加限制。</div>
+        <div class="api"><span class="method">POST</span><code>/api/v1/action-plans/{id}/execute</code><br>提交執行；伺服器再次檢查版本、Policy 與 preconditions。</div>
+        <div class="api"><span class="method">POST</span><code>/api/v1/actions/{id}/cancel</code><br>停止尚未完成的工作並依狀態判斷是否回滾。</div>
+        <div class="api"><span class="method">POST</span><code>/api/v1/emergency-stop</code><br>需要高權限與強驗證；停止新動作並暫停進行中流程。</div>
+      </div>
+
+      <h3 style="margin-top:1.7rem">統一 Tool Adapter 介面</h3>
+      <pre><code>interface OpsToolAdapter {
+  ToolDescriptor describe();
+  PlanResult plan(ActionIntent intent, EvidencePackage evidence);
+  DryRunResult dryRun(TypedAction action);
+  ExecutionRef execute(TypedAction action, IdempotencyKey key);
+  VerificationResult verify(ExecutionRef execution);
+  RollbackResult rollback(ExecutionRef execution);
+  CancelResult cancel(ExecutionRef execution);
+}</code></pre>
+      <p>每個工具必須宣告 <code>readOnly</code>、<code>destructive</code>、<code>idempotent</code>、支援環境、最大影響範圍、必要批准等級、前置條件及回滾能力。可用 Spring AI MCP Server 將唯讀工具公開給模型，但 write tool 仍要轉入 Action Gateway。</p>
+
+      <h3 style="margin-top:1.7rem">建議事件 Topic</h3>
+      <p><code>ops.alert.received.v1</code>、<code>ops.change.detected.v1</code>、<code>ops.anomaly.detected.v1</code>、<code>ops.investigation.started.v1</code>、<code>ops.model.handoff.v1</code>、<code>ops.action.proposed.v1</code>、<code>ops.action.approved.v1</code>、<code>ops.action.executed.v1</code>、<code>ops.action.verified.v1</code>、<code>ops.action.rolledback.v1</code></p>
+      <div class="callout"><strong>API 基本規則：</strong>所有寫入 API 都使用 OAuth2、Idempotency-Key、Correlation-ID、樂觀鎖版本及完整 audit；Webhook 使用簽章、timestamp 與 replay protection；API 版本採 URI major version，事件採 schema version。</div>
+    </section>
+
+    <section id="phases" class="section">
+      <h2>七、推進步驟與每階段驗收</h2>
+      <p class="intro">前 24 週完成可用 MVP：每日風險分析、唯讀 AI 調查、多模型切換及三個需批准的動作。有限 L3 自主處置應再經 12～24 週 shadow mode 與演練。</p>
+      <div class="steps">
+        <article class="phase"><div class="phase-num">0</div><div class="phase-body">
+          <div class="phase-meta"><span>第 1～2 週</span><span>治理與範圍</span></div><h3>選定 Pilot 與安全邊界</h3>
+          <div class="columns"><div><span class="mini-title">工作</span><ul><li>選 5～10 個服務與 3 個 Runbook</li><li>建立 P0～P3、L0～L3、資料分級</li><li>定義 SLO、Owner、禁止動作與批准矩陣</li></ul></div><div><span class="mini-title">工具</span><p>Backstage、Git、現有 ITSM／Wiki。</p></div><div><span class="mini-title">出口條件</span><p>每個 Pilot 服務都有 Owner、SLO、依賴、Runbook、資料分級與回滾責任人。</p></div></div>
+        </div></article>
+        <article class="phase"><div class="phase-num">1</div><div class="phase-body">
+          <div class="phase-meta"><span>第 2～5 週</span><span>工程與安全底座</span></div><h3>建立 Java 控制面骨架</h3>
+          <div class="columns"><div><span class="mini-title">工作</span><ul><li>Spring Modulith 多模組專案</li><li>PostgreSQL、Keycloak、OpenBao、OPA</li><li>OpenAPI、CI、SBOM、容器與 Argo CD</li><li>全平台 OTel Java Agent</li></ul></div><div><span class="mini-title">自行開發</span><p>Domain model、API error model、事件 envelope、audit interceptor、權限模型。</p></div><div><span class="mini-title">出口條件</span><p>OIDC 登入、機器身分、秘密輪替、API 稽核及部署流水線均通過整合測試。</p></div></div>
+        </div></article>
+        <article class="phase"><div class="phase-num">2</div><div class="phase-body">
+          <div class="phase-meta"><span>第 4～9 週</span><span>可觀測性</span></div><h3>統一 Telemetry 與查詢介面</h3>
+          <div class="columns"><div><span class="mini-title">工作</span><ul><li>OpenTelemetry Collector pipeline</li><li>Prometheus、OpenSearch、Jaeger、Grafana</li><li>統一 service.name、env、version、deployment.id</li><li>建立 Alertmanager webhook</li></ul></div><div><span class="mini-title">自行開發</span><p>Prometheus／OpenSearch／Trace Query Adapter、資料品質檢查及 Evidence Ledger。</p></div><div><span class="mini-title">出口條件</span><p>Pilot 服務可由一個 caseId 連到 metric、log、trace 及部署版本；資料斷流能被告警。</p></div></div>
+        </div></article>
+        <article class="phase"><div class="phase-num">3</div><div class="phase-body">
+          <div class="phase-meta"><span>第 6～11 週</span><span>服務脈絡</span></div><h3>建立服務目錄、拓樸與變更時間線</h3>
+          <div class="columns"><div><span class="mini-title">工作</span><ul><li>Backstage Catalog 與 Git metadata</li><li>接入 CI-CD、Git、K8s、Cloud 事件</li><li>合併靜態依賴與 Trace 動態關係</li></ul></div><div><span class="mini-title">自行開發</span><p>Catalog sync、Change Normalizer、Topology Snapshot、Owner／SLO resolver。</p></div><div><span class="mini-title">出口條件</span><p>輸入任一 serviceId 可取得 owner、SLO、上下游、版本、最近變更與可用 Runbook。</p></div></div>
+        </div></article>
+        <article class="phase"><div class="phase-num">4</div><div class="phase-body">
+          <div class="phase-meta"><span>第 9～14 週</span><span>確定性分析</span></div><h3>上線每日預防性分析</h3>
+          <div class="columns"><div><span class="mini-title">工作</span><ul><li>SLO、容量、憑證、備份、配額</li><li>MAD／EWMA／季節基線／回歸</li><li>OpenSearch anomaly detector</li><li>產生證據化每日風險清單</li></ul></div><div><span class="mini-title">自行開發</span><p>Analysis Job、Risk Scoring、Report Generator、歷史基線與誤判回饋。</p></div><div><span class="mini-title">出口條件</span><p>每項日報結論都有可重跑查詢、Evidence ID、Owner、期限與建議驗證方式。</p></div></div>
+        </div></article>
+        <article class="phase"><div class="phase-num">5</div><div class="phase-body">
+          <div class="phase-meta"><span>第 12～18 週</span><span>多模型控制面</span></div><h3>接入 Qwen、商用模型與模型切換</h3>
+          <div class="columns"><div><span class="mini-title">工作</span><ul><li>Qwen 經 vLLM OpenAI-compatible API</li><li>商用 Provider 主／備 Adapter</li><li>Structured Output 與 Evidence 驗證</li><li>Resilience4j timeout／retry／circuit breaker</li><li>Data Egress Gateway</li></ul></div><div><span class="mini-title">自行開發</span><p>Model Registry、Router、Handoff、Provider Health、Token／成本、資料遮蔽及人工切換 API。</p></div><div><span class="mini-title">出口條件</span><p>在測試中關閉 Qwen 或回傳錯誤格式，案件可接續由商用模型處理，證據不遺失且無重複動作。</p></div></div>
+        </div></article>
+        <article class="phase"><div class="phase-num">6</div><div class="phase-body">
+          <div class="phase-meta"><span>第 15～21 週</span><span>即時調查</span></div><h3>建立 Temporal 調查工作流程</h3>
+          <div class="columns"><div><span class="mini-title">工作</span><ul><li>告警去重與 incident correlation</li><li>蒐證、RAG、假設、驗證與模型升級</li><li>等待人工輸入及暫停／恢復</li><li>SSE 即時狀態與調查 UI</li></ul></div><div><span class="mini-title">自行開發</span><p>Investigation Workflow、Evidence Activities、Handoff Signal、No-progress detector、Case UI。</p></div><div><span class="mini-title">出口條件</span><p>服務重啟或工作節點故障後，調查仍可從既有狀態繼續；人工可在 UI 切換模型及接管。</p></div></div>
+        </div></article>
+        <article class="phase"><div class="phase-num">7</div><div class="phase-body">
+          <div class="phase-meta"><span>第 18～24 週</span><span>L2 受控執行</span></div><h3>建立 Action Gateway 與三個 Runbook</h3>
+          <div class="columns"><div><span class="mini-title">工作</span><ul><li>OPA 風險政策與人工批准</li><li>Argo／AWX／Argo CD Adapter</li><li>dry-run、冪等、互斥鎖、逾時</li><li>postcondition、回滾與 Red Button</li></ul></div><div><span class="mini-title">自行開發</span><p>Typed Action DSL、Adapter SDK、Approval、Execution Journal、Verifier、Rollback Coordinator。</p></div><div><span class="mini-title">出口條件</span><p>三個 Pilot Runbook 均能重複 dry-run、批准後執行、驗證及故障回滾；模型不能繞過 Gateway。</p></div></div>
+        </div></article>
+        <article class="phase"><div class="phase-num">8</div><div class="phase-body">
+          <div class="phase-meta"><span>第 25～36 週</span><span>Shadow 與品質門檻</span></div><h3>歷史重播、故障演練與 Golden Dataset</h3>
+          <div class="columns"><div><span class="mini-title">工作</span><ul><li>歷史事故重播與注入模型失敗</li><li>比較 Qwen、各商用模型及人工結果</li><li>Chaos／GameDay／權限與 Prompt Injection 測試</li></ul></div><div><span class="mini-title">自行開發</span><p>Evaluation Harness、Replay、Scorecard、模型版本對照、Regression Gate。</p></div><div><span class="mini-title">出口條件</span><p>達成公司核定的正確率、無越權、低回滾及切換成功門檻後，才可逐一申請 L3。</p></div></div>
+        </div></article>
+        <article class="phase"><div class="phase-num">9</div><div class="phase-body">
+          <div class="phase-meta"><span>第 36～48 週</span><span>有限 L3</span></div><h3>逐項開放低風險自主處置</h3>
+          <div class="columns"><div><span class="mini-title">工作</span><ul><li>每個 Action Type 單獨授權</li><li>限定服務、時段、區域及最大影響面</li><li>持續監控成功、回滾、誤判與成本</li></ul></div><div><span class="mini-title">原則</span><p>不可一次打開全平台 L3。若風險、資料品質或模型健康異常，自動降級 L2／L1。</p></div><div><span class="mini-title">出口條件</span><p>每個 L3 動作都有 owner、SLO、成功率、回滾率、季度審查及一鍵撤銷權限。</p></div></div>
+        </div></article>
+      </div>
+    </section>
+
+    <section id="java" class="section">
+      <h2>八、Java 工程標準與專案結構</h2>
+      <div class="grid g2">
+        <article class="card"><h3>版本建議</h3><ul><li><strong>Java：</strong>21 LTS 作保守基線；新建環境可另行驗證 Java 25</li><li><strong>Spring Boot：</strong>4.x 穩定版，使用 BOM 固定完整版本組合</li><li><strong>Build：</strong>Maven Wrapper、集中 dependencyManagement</li><li><strong>API：</strong>OpenAPI 3.1、JSON Schema、AsyncAPI</li><li><strong>測試：</strong>JUnit 5、Testcontainers、WireMock、ArchUnit</li></ul></article>
+        <article class="card"><h3>架構原則</h3><ul><li>先採 Spring Modulith，避免一開始拆成過多微服務</li><li>Domain 不直接依賴任何模型或工具 SDK</li><li>所有 Provider／工具透過 ports-and-adapters</li><li>寫入動作採 outbox、冪等鍵與樂觀鎖</li><li>每個模型 Provider 有獨立 circuit breaker 與 bulkhead</li></ul></article>
+      </div>
+      <pre><code>aiops-platform/
+├─ aiops-domain/              # Incident, Evidence, Hypothesis, ActionPlan, PolicyResult
+├─ aiops-control-plane/       # Spring Boot / Spring Modulith 主應用
+│  ├─ incident/               # 案件、去重、狀態機
+│  ├─ evidence/               # 證據帳本與查詢協調
+│  ├─ analysis/               # SLO、統計、容量與風險分數
+│  ├─ modelrouting/           # Provider registry、router、handoff、quality gate
+│  ├─ knowledge/              # RAG、文件同步與引用
+│  ├─ action/                 # Action Gateway、批准、驗證與回滾
+│  ├─ policy/                 # OPA client 與政策上下文
+│  └─ audit/                  # 不可竄改事件與查詢
+├─ aiops-temporal-worker/     # Investigation / Action / Verification workflows
+├─ aiops-adapter-prometheus/
+├─ aiops-adapter-opensearch/
+├─ aiops-adapter-kubernetes/
+├─ aiops-adapter-argoworkflows/
+├─ aiops-adapter-awx/
+├─ aiops-adapter-argocd/
+├─ aiops-provider-qwen/       # vLLM OpenAI-compatible endpoint
+├─ aiops-provider-commercial/ # 各商用模型 Adapter
+├─ aiops-mcp-server/          # 僅公開受控、型別化的工具
+└─ aiops-contract-tests/      # Provider、Tool、Webhook 與 API 合約測試</code></pre>
+
+      <h3>Model Router 建議決策欄位</h3>
+      <p><code>taskType</code>、<code>requiredCapabilities</code>、<code>riskLevel</code>、<code>dataClassification</code>、<code>noveltyScore</code>、<code>evidenceCompleteness</code>、<code>latencyBudget</code>、<code>costBudget</code>、<code>providerHealth</code>、<code>operatorOverride</code>。</p>
+      <div class="callout"><strong>Provider abstraction：</strong>Spring AI 提供跨模型 API 與 Structured Output，但公司的 Model Router、失敗分類、交接包、資料出境政策與升級規則仍應由自有 Java domain 控制，不能完全依賴框架的預設 fallback。</div>
+    </section>
+
+    <section id="testing" class="section">
+      <h2>九、必要驗收與故障測試</h2>
+      <div class="grid g3">
+        <article class="card"><h3>模型切換</h3><ul class="check"><li>Qwen timeout 後接管</li><li>商用 Provider 429 後換備援</li><li>錯誤 JSON／Evidence ID 被拒絕</li><li>人工切換不遺失案件狀態</li><li>切換不重複執行工具</li></ul></article>
+        <article class="card"><h3>安全與資料</h3><ul class="check"><li>秘密及個資不送商用模型</li><li>Prompt Injection 不能改變 Policy</li><li>模型無權取得原始憑證</li><li>過期批准不能執行</li><li>Red Button 能阻止新動作</li></ul></article>
+        <article class="card"><h3>動作生命週期</h3><ul class="check"><li>dry-run 與實際參數一致</li><li>重送請求保持冪等</li><li>precondition 改變即拒絕</li><li>postcondition 失敗會回滾</li><li>回滾失敗立即人工升級</li></ul></article>
+        <article class="card"><h3>資料與證據</h3><ul class="check"><li>所有結論可回到來源查詢</li><li>查詢含時間、hash 與權限</li><li>Telemetry 缺失會降低信心</li><li>舊 Runbook 不會當成最新事實</li><li>跨服務時間同步可驗證</li></ul></article>
+        <article class="card"><h3>耐久性</h3><ul class="check"><li>Java 服務重啟可恢復案件</li><li>Temporal Worker 中斷不丟狀態</li><li>Kafka 重播不產生重複 Action</li><li>外部工具短暫失敗可安全重試</li><li>長時間批准等待不占用執行緒</li></ul></article>
+        <article class="card"><h3>品質與回歸</h3><ul class="check"><li>歷史事故 Golden Dataset</li><li>模型／Prompt 版本比較</li><li>根因、證據、計畫分開評分</li><li>成本與延遲納入評估</li><li>未通過門檻不得升級 L3</li></ul></article>
+      </div>
+
+      <h3 style="margin-top:1.8rem">建議團隊配置</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>角色</th><th>建議人力</th><th>主要責任</th></tr></thead>
+        <tbody><tr><td>Platform／SRE Lead</td><td>1</td><td>目標、SLO、風險、Runbook 與跨團隊決策</td></tr>
+        <tr><td>Java Backend</td><td>2～3</td><td>控制面、API、Temporal、Adapter、Action Gateway</td></tr>
+        <tr><td>Observability Engineer</td><td>1～2</td><td>OTel、Prometheus、OpenSearch、Trace 與資料品質</td></tr>
+        <tr><td>AI／MLOps Engineer</td><td>1～2</td><td>Qwen serving、模型路由、RAG、評估與商用 Provider</td></tr>
+        <tr><td>Security Engineer</td><td>0.5～1</td><td>OIDC、秘密、資料出境、OPA、威脅模型及稽核</td></tr>
+        <tr><td>Frontend／UX</td><td>1</td><td>調查、證據、模型切換、批准及日報 UI</td></tr>
+        <tr><td>Pilot Service Owners</td><td>兼任</td><td>Runbook、驗收、演練與 Golden Dataset</td></tr></tbody>
+      </table></div>
+    </section>
+
+    <section class="section">
+      <h2>十、前四週可立即執行的工作</h2>
+      <ol>
+        <li>確認自架 Qwen 的型號、上下文長度、vLLM／其他 serving 方式、OpenAI API 相容程度及工具呼叫能力。</li>
+        <li>選定第一家與備援商用模型 Provider，確認 API、資料保存政策、區域、合約及流量限制。</li>
+        <li>盤點現有 Prometheus、Grafana、Elastic／OpenSearch、Kubernetes、CI-CD、Ansible 與工單系統。</li>
+        <li>挑選 5～10 個 Pilot 服務，建立 owner、SLO、依賴、Runbook、資料分級及三個低風險動作。</li>
+        <li>建立 Java Spring Modulith repository、核心 Domain、OpenAPI、Keycloak、PostgreSQL 與 OTel Java Agent。</li>
+        <li>實作第一個只讀 Alertmanager Webhook → Incident → Evidence → Qwen 摘要流程，全程禁止任何 write tool。</li>
+      </ol>
+      <div class="callout"><strong>第一個成功里程碑：</strong>收到一筆正式告警後，平台能建立案件、找到正確服務與 Owner、查詢關聯 metrics／logs／traces／部署、由 Qwen 產生附 Evidence ID 的摘要；人員可按下「升級商用模型」，由新模型在相同案件上繼續分析。</div>
+    </section>
+
+    <section class="section">
+      <h2>官方技術參考</h2>
+      <div class="grid g2">
+        <ul>
+          <li><a href="https://docs.spring.io/spring-ai/reference/">Spring AI Reference</a>－多模型 API、RAG、Structured Output、Tools 與 MCP。</li>
+          <li><a href="https://docs.spring.io/spring-ai/reference/api/tools.html">Spring AI Tool Calling</a>－工具由應用程式執行，模型不直接持有 API。</li>
+          <li><a href="https://github.com/QwenLM/Qwen3/blob/main/docs/source/deployment/vllm.md">Qwen vLLM Deployment</a>－Qwen 的 OpenAI-compatible API 部署方式。</li>
+          <li><a href="https://docs.vllm.ai/en/latest/serving/online_serving/openai_compatible_server/">vLLM OpenAI-compatible Server</a>。</li>
+          <li><a href="https://github.com/temporalio/sdk-java">Temporal Java SDK</a>－以 Java 建立耐久工作流程。</li>
+          <li><a href="https://opentelemetry.io/docs/languages/java/">OpenTelemetry Java</a>－Java metrics、logs、traces。</li>
+          <li><a href="https://prometheus.io/docs/prometheus/latest/querying/api/">Prometheus HTTP API</a>。</li>
+          <li><a href="https://prometheus.io/docs/alerting/latest/overview/">Prometheus Alertmanager</a>。</li>
+          <li><a href="https://docs.opensearch.org/latest/clients/java/">OpenSearch Java Client</a>。</li>
+        </ul>
+        <ul>
+          <li><a href="https://docs.opensearch.org/latest/observing-your-data/ad/api/">OpenSearch Anomaly Detection API</a>。</li>
+          <li><a href="https://backstage.io/docs/next/features/software-catalog/software-catalog-api/">Backstage Catalog REST API</a>。</li>
+          <li><a href="https://www.openpolicyagent.org/docs/integration">OPA Integration API</a>。</li>
+          <li><a href="https://www.keycloak.org/docs-api/latest/rest-api/index.html">Keycloak Admin REST API</a>。</li>
+          <li><a href="https://openbao.org/api-docs/2.4.x/">OpenBao HTTP API</a>。</li>
+          <li><a href="https://strimzi.io/docs/bridge/latest/full.html">Strimzi HTTP Bridge</a>－以 OpenAPI／HTTP 整合 Kafka。</li>
+          <li><a href="https://argo-workflows.readthedocs.io/en/latest/rest-api/">Argo Workflows REST API</a>。</li>
+          <li><a href="https://docs.ansible.com/projects/awx/en/latest/rest_api/api_ref.html">AWX REST API</a>。</li>
+          <li><a href="https://argo-cd.readthedocs.io/en/stable/developer-guide/api-docs/">Argo CD API</a>。</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+  <footer class="page">AI DevOps 平台 Java 實施與多模型協作計畫｜第二版｜2026-09-03</footer>
+</body>
+</html>
