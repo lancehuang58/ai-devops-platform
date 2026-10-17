@@ -1,0 +1,11 @@
+{
+  "target": {
+    "controller_resource_id": "RES-JENKINS-TEST-001",
+    "job_resource_id": "RES-JOB-DELETE-001",
+    "job_full_name": "sandbox/delete-me"
+  },
+  "observed_at": "2026-09-29T03:00:20Z",
+  "evidence_ref": "EV-S60",
+  "outcome": "ACKNOWLEDGED",
+  "remote_operation_ref": null
+}

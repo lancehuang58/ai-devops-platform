@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/devops/jenkins-job-query/v1/query-solution.schema.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "solution_id": {
+      "const": "SOL-JENKINS-JOB-EXPLAIN"
+    },
+    "execution_mode": {
+      "const": "ADAPTIVE_READ"
+    },
+    "allowed_roles": {
+      "const": [
+        "ADMIN",
+        "NORMAL_USER"
+      ]
+    },
+    "view": {
+      "const": "COMMON_QUERY_SAFE"
+    },
+    "primary_target_types": {
+      "const": [
+        "FREESTYLE",
+        "PIPELINE"
+      ]
+    },
+    "exclude_multibranch_primary": {
+      "const": true
+    },
+    "requires_idle": {
+      "const": false
+    },
+    "requires_admin_confirmation": {
+      "const": false
+    },
+    "entry_commands": {
+      "const": [
+        {
+          "command_id": "JOB_METADATA_READ",
+          "version": "1.0.0"
+        },
+        {
+          "command_id": "JOB_CONFIG_READ_SAFE",
+          "version": "1.0.0"
+        }
+      ]
+    },
+    "capability_policy": {
+      "const": {
+        "command_type": "QUERY",
+        "transport": "MCP",
+        "require_published": true,
+        "require_read_only_proof": true,
+        "require_resolved_related_target": true,
+        "require_common_safe_projection": true,
+        "forbid_secret_and_conversation_tools": true,
+        "tool_annotations_are_not_authorization": true
+      }
+    },
+    "stop_policy": {
+      "const": {
+        "technical_retry_count": 0,
+        "fallback_allowed": false,
+        "auto_resume": false,
+        "stop_all_after_technical_fault": true,
+        "allow_semantic_followup_after_valid_response": true
+      }
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "TESTED",
+        "PUBLISHED",
+        "DISABLED"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "budgets": {
+      "type": "object",
+      "properties": {
+        "max_tool_calls": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_model_calls": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "workflow_timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_total_raw_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_config_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_other_response_bytes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "max_tool_calls",
+        "max_model_calls",
+        "workflow_timeout_seconds",
+        "max_total_raw_bytes",
+        "max_config_bytes",
+        "max_other_response_bytes"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "solution_id",
+    "execution_mode",
+    "allowed_roles",
+    "view",
+    "primary_target_types",
+    "exclude_multibranch_primary",
+    "requires_idle",
+    "requires_admin_confirmation",
+    "entry_commands",
+    "capability_policy",
+    "stop_policy",
+    "status",
+    "version",
+    "budgets"
+  ],
+  "additionalProperties": false
+}

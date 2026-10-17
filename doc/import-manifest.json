@@ -1,0 +1,380 @@
+{
+  "description": "Import of existing project documents and original v1 packages; no change to approved requirements.",
+  "baseline": {
+    "specifications": "0.40",
+    "test_case_sets": "0.5",
+    "source_document_date": "2026-10-17"
+  },
+  "transformations": [
+    "Convert sandbox links to repository-relative links",
+    "Add status notices to supporting and historical documents",
+    "Extract only the named solution package subdirectories; leave bundled older specifications in the original ZIP archives"
+  ],
+  "sources": [
+    {
+      "source_filename": "DevOps_智慧維運應用需求規格書_草案.md",
+      "source_sha256": "f37cc3dec320bb8bc9e4e8b2a475b3bc35d4d6d8fd98fb3be689431c8c911c64",
+      "destination": "doc/specifications/DevOps_智慧維運應用需求規格書_草案.md",
+      "repository_sha256": "49f4790a87d288e4a52f892c9be22c30c067243020d3b0513eca161d9c659481",
+      "original_bytes_preserved": false
+    },
+    {
+      "source_filename": "DevOps_智慧維運應用系統分析規格書_草案.md",
+      "source_sha256": "fa7c3d9a10b1f1c644fd0789318c235efcf9368b2894a13338407a4188e79aba",
+      "destination": "doc/specifications/DevOps_智慧維運應用系統分析規格書_草案.md",
+      "repository_sha256": "042ed2ba2a0bb84ba277e4e27fbf1ab98397227ea22b43fb0a7a825190bb0013",
+      "original_bytes_preserved": false
+    },
+    {
+      "source_filename": "DevOps_智慧維運應用系統設計規格書_草案.md",
+      "source_sha256": "c27796217ee49f260dc4e90b1f5678d959e5e519c77559d100618bb5dd3e59c1",
+      "destination": "doc/specifications/DevOps_智慧維運應用系統設計規格書_草案.md",
+      "repository_sha256": "f2f4d1678d412aedc7fa9a38018ed0868301fe5e09eddbd6714a6be659615501",
+      "original_bytes_preserved": false
+    },
+    {
+      "source_filename": "DevOps_模型品質評估與回歸模組_測試案例集.md",
+      "source_sha256": "f37fe98cf83e17ef3c9b4f02f8f12fe1777f1217c07e84052797d52061c33809",
+      "destination": "doc/testing/DevOps_模型品質評估與回歸模組_測試案例集.md",
+      "repository_sha256": "f37fe98cf83e17ef3c9b4f02f8f12fe1777f1217c07e84052797d52061c33809",
+      "original_bytes_preserved": true
+    },
+    {
+      "source_filename": "DevOps_方案與工具測試模組_測試案例集.md",
+      "source_sha256": "d7ae126f9d7b791a75d7cac055b7560ac8e25f931539f3b45dda2ad283fc9fb4",
+      "destination": "doc/testing/DevOps_方案與工具測試模組_測試案例集.md",
+      "repository_sha256": "d7ae126f9d7b791a75d7cac055b7560ac8e25f931539f3b45dda2ad283fc9fb4",
+      "original_bytes_preserved": true
+    },
+    {
+      "source_filename": "DevOps_Jenkins_Job內容查詢_方案與命令Schema_v1.md",
+      "source_sha256": "8b216c255b9b8a27c6741cdcf3be32662e439b9a4b013b4f22712f818fd67d57",
+      "destination": "doc/solutions/DevOps_Jenkins_Job內容查詢_方案與命令Schema_v1.md",
+      "repository_sha256": "6650f22c0cd729d9fa5e97c346751ed15792d51f6b788fc7cdcc3f5aaa6d48f5",
+      "original_bytes_preserved": false
+    },
+    {
+      "source_filename": "DevOps_Jenkins_Job刪除_方案與命令Schema_v1.md",
+      "source_sha256": "5f889ad9323c9fc9bf5cab93864967a21b02487e8744e2d1ef214de6112cc740",
+      "destination": "doc/solutions/DevOps_Jenkins_Job刪除_方案與命令Schema_v1.md",
+      "repository_sha256": "324179b2546b3927a88af7904ec4ac2c79fbd99194e0b411bec96912e61dcdbe",
+      "original_bytes_preserved": false
+    },
+    {
+      "source_filename": "DevOps_智慧維運機器人_模型品質評估案例集_v0.1.md",
+      "source_sha256": "be1218f39d969b631e4cf7b4c88b1d65a11d66f918db5e1ac03bd99a09edba86",
+      "destination": "doc/archive/DevOps_智慧維運機器人_模型品質評估案例集_v0.1.md",
+      "repository_sha256": "e8db02b8cfe8a356426b0c245bbfc4dfb00937d339091e3f92b06ec019485652",
+      "original_bytes_preserved": false
+    },
+    {
+      "source_filename": "devops-agent-platform-design.md",
+      "source_sha256": "cfb6922b8c9898b32b4d6b7b33032580efde0dc60662e63def32a0e4a5856d68",
+      "destination": "doc/archive/devops-agent-platform-design.md",
+      "repository_sha256": "01bcfa8b7f15a6d2ac126385083af07e56624aff69d50df769c6291ae85cb79d",
+      "original_bytes_preserved": false
+    },
+    {
+      "source_filename": "jenkins-job-query-v1.zip",
+      "source_sha256": "254bafb5ddf1e8282e82c58ab5161d455b6b502775be303afa692b27162ee851",
+      "destination": "doc/archive/packages/jenkins-job-query-v1.zip",
+      "repository_sha256": "254bafb5ddf1e8282e82c58ab5161d455b6b502775be303afa692b27162ee851",
+      "original_bytes_preserved": true
+    },
+    {
+      "source_filename": "jenkins-job-delete-v1.zip",
+      "source_sha256": "c83eee2aaba687c6a775e8fb5863f1dfff5d3dbd67c2fdf840d4f7946a0d3504",
+      "destination": "doc/archive/packages/jenkins-job-delete-v1.zip",
+      "repository_sha256": "c83eee2aaba687c6a775e8fb5863f1dfff5d3dbd67c2fdf840d4f7946a0d3504",
+      "original_bytes_preserved": true
+    }
+  ],
+  "extracted_packages": [
+    {
+      "archive": "doc/archive/packages/jenkins-job-query-v1.zip",
+      "files": [
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/README.md",
+          "archive_member": "jenkins-job-query-v1/README.md",
+          "source_sha256": "bbb15a726b1058660bfea1a453468fea47a315bf9a089101d5e5b025d0e52924",
+          "repository_sha256": "c6bfd23c1f1fb92e7c94ba7c36e0c3291bd6555594eb11094ae7ba21a0b7f86a",
+          "original_bytes_preserved": false
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/definitions/job-query.solution.json",
+          "archive_member": "jenkins-job-query-v1/definitions/job-query.solution.json",
+          "source_sha256": "2508b226bc2aca0ad05c5bcff93c5053eeff0fba9eeabb19defcb62d3c70d550",
+          "repository_sha256": "2508b226bc2aca0ad05c5bcff93c5053eeff0fba9eeabb19defcb62d3c70d550",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/definitions/query-commands.json",
+          "archive_member": "jenkins-job-query-v1/definitions/query-commands.json",
+          "source_sha256": "f40401bdaa36e8719fd558c11a30f86e14257466678fefb65b9b5f253ef1dcdc",
+          "repository_sha256": "f40401bdaa36e8719fd558c11a30f86e14257466678fefb65b9b5f253ef1dcdc",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/examples/answer.json",
+          "archive_member": "jenkins-job-query-v1/examples/answer.json",
+          "source_sha256": "b5879eeb3ca0c103ae67e028e99b56bee08bf2550acdab649e215e57b12fedd2",
+          "repository_sha256": "b5879eeb3ca0c103ae67e028e99b56bee08bf2550acdab649e215e57b12fedd2",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/examples/mcp-bindings.template.json",
+          "archive_member": "jenkins-job-query-v1/examples/mcp-bindings.template.json",
+          "source_sha256": "870b6c67ee03f77c304a98907fec85b22bedc4c44c14710238d00b9d023f8a0a",
+          "repository_sha256": "870b6c67ee03f77c304a98907fec85b22bedc4c44c14710238d00b9d023f8a0a",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/examples/read-jenkinsfile.json",
+          "archive_member": "jenkins-job-query-v1/examples/read-jenkinsfile.json",
+          "source_sha256": "a619638a4c8a7177ccf2ce84e77e19cbe8c3a7b959a8f0331808a19cceb6b037",
+          "repository_sha256": "a619638a4c8a7177ccf2ce84e77e19cbe8c3a7b959a8f0331808a19cceb6b037",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/examples/role-resource-policy.json",
+          "archive_member": "jenkins-job-query-v1/examples/role-resource-policy.json",
+          "source_sha256": "e9ae24c97e69cc6c898c337d31d5d0193cfd20deabab1d8d18ceb3083ad79f9e",
+          "repository_sha256": "e9ae24c97e69cc6c898c337d31d5d0193cfd20deabab1d8d18ceb3083ad79f9e",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/requirements.txt",
+          "archive_member": "jenkins-job-query-v1/requirements.txt",
+          "source_sha256": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
+          "repository_sha256": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/schemas/query-answer.schema.json",
+          "archive_member": "jenkins-job-query-v1/schemas/query-answer.schema.json",
+          "source_sha256": "5953d9d550a08a7b7552ae3a2beb5ee7b87e96973a33acd4d8f589896ffe2b84",
+          "repository_sha256": "5953d9d550a08a7b7552ae3a2beb5ee7b87e96973a33acd4d8f589896ffe2b84",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/schemas/query-command.schema.json",
+          "archive_member": "jenkins-job-query-v1/schemas/query-command.schema.json",
+          "source_sha256": "4e21163eeaa9f226a5820ad51c8950dbc45f2207de1eca93e371e478add03b9d",
+          "repository_sha256": "4e21163eeaa9f226a5820ad51c8950dbc45f2207de1eca93e371e478add03b9d",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/schemas/query-contracts.schema.json",
+          "archive_member": "jenkins-job-query-v1/schemas/query-contracts.schema.json",
+          "source_sha256": "50dbe54281540d3eaf57d58f9d6a54804ce60859c0a4ec69ad6bbe63b95fbb27",
+          "repository_sha256": "50dbe54281540d3eaf57d58f9d6a54804ce60859c0a4ec69ad6bbe63b95fbb27",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/schemas/query-solution.schema.json",
+          "archive_member": "jenkins-job-query-v1/schemas/query-solution.schema.json",
+          "source_sha256": "ac5562a81e3306ccce63ba0433ed236c500876afa752c875720c4c095ee8a41b",
+          "repository_sha256": "ac5562a81e3306ccce63ba0433ed236c500876afa752c875720c4c095ee8a41b",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/schemas/read-decision.schema.json",
+          "archive_member": "jenkins-job-query-v1/schemas/read-decision.schema.json",
+          "source_sha256": "82c0b626fe93f7cd795b01fc824c704be83ae6669d4277262db5bccfb9a459ce",
+          "repository_sha256": "82c0b626fe93f7cd795b01fc824c704be83ae6669d4277262db5bccfb9a459ce",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/tests/cases.json",
+          "archive_member": "jenkins-job-query-v1/tests/cases.json",
+          "source_sha256": "2976bba3659fa734b62649179697a0494f7828be6b0261090f664a3bb6778f14",
+          "repository_sha256": "2976bba3659fa734b62649179697a0494f7828be6b0261090f664a3bb6778f14",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/tests/negative-schema-fixtures.json",
+          "archive_member": "jenkins-job-query-v1/tests/negative-schema-fixtures.json",
+          "source_sha256": "fa0ff92ce4348c9ef2d1cea1685a1e8e83d5e36db8d7476d26b676a8a91cf608",
+          "repository_sha256": "fa0ff92ce4348c9ef2d1cea1685a1e8e83d5e36db8d7476d26b676a8a91cf608",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/tests/static-validation-result.json",
+          "archive_member": "jenkins-job-query-v1/tests/static-validation-result.json",
+          "source_sha256": "9585613d6db6b2f2d182285983e200a143bf09e7376986f936bf66d84ed742f4",
+          "repository_sha256": "9585613d6db6b2f2d182285983e200a143bf09e7376986f936bf66d84ed742f4",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-query-v1/tests/validate_schema.py",
+          "archive_member": "jenkins-job-query-v1/tests/validate_schema.py",
+          "source_sha256": "f9f8ab61f4c0ab3f06d528403a17061e800d006f6d7e6a9f827422a8febcc9a2",
+          "repository_sha256": "f9f8ab61f4c0ab3f06d528403a17061e800d006f6d7e6a9f827422a8febcc9a2",
+          "original_bytes_preserved": true
+        }
+      ],
+      "excluded_from_extraction": "specifications/ (older snapshots retained inside the unchanged ZIP)"
+    },
+    {
+      "archive": "doc/archive/packages/jenkins-job-delete-v1.zip",
+      "files": [
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/README.md",
+          "archive_member": "jenkins-job-delete-v1/README.md",
+          "source_sha256": "4b19f65c1c8bdfb08cea46375f9095d7c5232715d965dc1ffceffe1caf4a6367",
+          "repository_sha256": "7f5270385d9c020d976b6dd974ad1c43d5174b20ba47d6423888789df6ada06f",
+          "original_bytes_preserved": false
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/definitions/commands.json",
+          "archive_member": "jenkins-job-delete-v1/definitions/commands.json",
+          "source_sha256": "ff651ad460c69b6ea4c6b3b44ea1b268eaede39d3301217fabfc2c478ad53882",
+          "repository_sha256": "ff651ad460c69b6ea4c6b3b44ea1b268eaede39d3301217fabfc2c478ad53882",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/definitions/jenkins-job-delete.solution.json",
+          "archive_member": "jenkins-job-delete-v1/definitions/jenkins-job-delete.solution.json",
+          "source_sha256": "a1692731580cfc7b01133e77c97027f807698cd2deba2b5d011422464eeadb49",
+          "repository_sha256": "a1692731580cfc7b01133e77c97027f807698cd2deba2b5d011422464eeadb49",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/examples/config-result.json",
+          "archive_member": "jenkins-job-delete-v1/examples/config-result.json",
+          "source_sha256": "7978911965ed936178501169302136daeaed7a97a8bec7fdf226bed26ec0a639",
+          "repository_sha256": "7978911965ed936178501169302136daeaed7a97a8bec7fdf226bed26ec0a639",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/examples/connector-binding.template.json",
+          "archive_member": "jenkins-job-delete-v1/examples/connector-binding.template.json",
+          "source_sha256": "6882bcc39b806f8a021519bc5767daa96835340724e810be6c81c307c9d5a0d7",
+          "repository_sha256": "6882bcc39b806f8a021519bc5767daa96835340724e810be6c81c307c9d5a0d7",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/examples/delete-ack.json",
+          "archive_member": "jenkins-job-delete-v1/examples/delete-ack.json",
+          "source_sha256": "647da048153205b7db98931cdc9d15758a18e28963cb51f662ef0d2f22401731",
+          "repository_sha256": "647da048153205b7db98931cdc9d15758a18e28963cb51f662ef0d2f22401731",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/examples/inspect-absent.json",
+          "archive_member": "jenkins-job-delete-v1/examples/inspect-absent.json",
+          "source_sha256": "24b705528b6036b56c691c28be75d920de98dea51ebfa55361df043aefe52649",
+          "repository_sha256": "24b705528b6036b56c691c28be75d920de98dea51ebfa55361df043aefe52649",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/examples/inspect-present.json",
+          "archive_member": "jenkins-job-delete-v1/examples/inspect-present.json",
+          "source_sha256": "a34baebbfb1d814ed75567bccbb92df274f1e8441b99135d511feae24e323185",
+          "repository_sha256": "a34baebbfb1d814ed75567bccbb92df274f1e8441b99135d511feae24e323185",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/examples/intent-candidate.json",
+          "archive_member": "jenkins-job-delete-v1/examples/intent-candidate.json",
+          "source_sha256": "f378c2dc1f1758c7a485a51e4b7ed4e2ed0a4a2667f914e5b335463e078ecaaf",
+          "repository_sha256": "f378c2dc1f1758c7a485a51e4b7ed4e2ed0a4a2667f914e5b335463e078ecaaf",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/examples/report-success.json",
+          "archive_member": "jenkins-job-delete-v1/examples/report-success.json",
+          "source_sha256": "a370dbb4909211319fc562dd31dc43865557ee5dc479615c95615acd789c9265",
+          "repository_sha256": "a370dbb4909211319fc562dd31dc43865557ee5dc479615c95615acd789c9265",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/examples/report-unknown.json",
+          "archive_member": "jenkins-job-delete-v1/examples/report-unknown.json",
+          "source_sha256": "7f729487960df7bcea4168c4344af14699fc8d645852a9f0fa086f5ab4c9f875",
+          "repository_sha256": "7f729487960df7bcea4168c4344af14699fc8d645852a9f0fa086f5ab4c9f875",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/examples/resource-mapping.template.json",
+          "archive_member": "jenkins-job-delete-v1/examples/resource-mapping.template.json",
+          "source_sha256": "3c6d36c57493eb331486cc656a1a114edbe415685302afefcaf6615d5927db0f",
+          "repository_sha256": "3c6d36c57493eb331486cc656a1a114edbe415685302afefcaf6615d5927db0f",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/examples/target.json",
+          "archive_member": "jenkins-job-delete-v1/examples/target.json",
+          "source_sha256": "fbc88915975cd96fd433b9583d3aea11872d0012533d4b2487bf503158eba93e",
+          "repository_sha256": "fbc88915975cd96fd433b9583d3aea11872d0012533d4b2487bf503158eba93e",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/requirements.txt",
+          "archive_member": "jenkins-job-delete-v1/requirements.txt",
+          "source_sha256": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
+          "repository_sha256": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/schemas/command-definition.schema.json",
+          "archive_member": "jenkins-job-delete-v1/schemas/command-definition.schema.json",
+          "source_sha256": "a41ca4761ec7a861c6e563f475bea380502205b8f42ca3d81104a3b56260a878",
+          "repository_sha256": "a41ca4761ec7a861c6e563f475bea380502205b8f42ca3d81104a3b56260a878",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/schemas/connector-binding.schema.json",
+          "archive_member": "jenkins-job-delete-v1/schemas/connector-binding.schema.json",
+          "source_sha256": "a463b58aac08a8539992d95a08f970fbd5074730e28336cf259ec107d39b5c3b",
+          "repository_sha256": "a463b58aac08a8539992d95a08f970fbd5074730e28336cf259ec107d39b5c3b",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/schemas/contracts.schema.json",
+          "archive_member": "jenkins-job-delete-v1/schemas/contracts.schema.json",
+          "source_sha256": "b03e99a060e8fa47f8cb334cb9e015e0e3a087181ca8ec337246959f332ddfec",
+          "repository_sha256": "b03e99a060e8fa47f8cb334cb9e015e0e3a087181ca8ec337246959f332ddfec",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/schemas/solution-definition.schema.json",
+          "archive_member": "jenkins-job-delete-v1/schemas/solution-definition.schema.json",
+          "source_sha256": "e8cb1deb28414ec62e5a041cfdeb073838bb5bff80b69eaf152a7563c46edb01",
+          "repository_sha256": "e8cb1deb28414ec62e5a041cfdeb073838bb5bff80b69eaf152a7563c46edb01",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/tests/cases.json",
+          "archive_member": "jenkins-job-delete-v1/tests/cases.json",
+          "source_sha256": "1d3ebd17b13fdefb4ffe0719d484d61e4d934fdf9210e6f5a3a725bf9e6a4ba1",
+          "repository_sha256": "1d3ebd17b13fdefb4ffe0719d484d61e4d934fdf9210e6f5a3a725bf9e6a4ba1",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/tests/negative-schema-fixtures.json",
+          "archive_member": "jenkins-job-delete-v1/tests/negative-schema-fixtures.json",
+          "source_sha256": "33b53dbab98538de2871e8316dd0229f0121b291256c3ddaa2993feb7c29cf8c",
+          "repository_sha256": "33b53dbab98538de2871e8316dd0229f0121b291256c3ddaa2993feb7c29cf8c",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/tests/static-validation-result.json",
+          "archive_member": "jenkins-job-delete-v1/tests/static-validation-result.json",
+          "source_sha256": "24db36d8a37109613bd58d666f79fd5bc6a2b41ce3747a193c805e8f0f90b336",
+          "repository_sha256": "24db36d8a37109613bd58d666f79fd5bc6a2b41ce3747a193c805e8f0f90b336",
+          "original_bytes_preserved": true
+        },
+        {
+          "path": "doc/solutions/jenkins-job-delete-v1/tests/validate_schema.py",
+          "archive_member": "jenkins-job-delete-v1/tests/validate_schema.py",
+          "source_sha256": "494879898ff1f60f65e1a2913e54a18cc57acd37da1a76232cf0978d2126a4f6",
+          "repository_sha256": "494879898ff1f60f65e1a2913e54a18cc57acd37da1a76232cf0978d2126a4f6",
+          "original_bytes_preserved": true
+        }
+      ],
+      "excluded_from_extraction": "specifications/ (older snapshots retained inside the unchanged ZIP)"
+    }
+  ],
+  "relative_link_replacements": 18
+}

@@ -1,0 +1,16 @@
+{
+  "target": {
+    "controller_resource_id": "RES-JENKINS-TEST-001",
+    "job_resource_id": "RES-JOB-DELETE-001",
+    "job_full_name": "sandbox/delete-me"
+  },
+  "observed_at": "2026-09-29T03:00:00Z",
+  "evidence_ref": "EV-S10",
+  "presence": "PRESENT",
+  "authoritative": true,
+  "scope_complete": true,
+  "job_kind": "PIPELINE",
+  "is_multibranch_branch": false,
+  "active_build_count": 0,
+  "queued_build_count": 0
+}

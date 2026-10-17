@@ -1,0 +1,395 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/devops/jenkins-job-query/v1/query-contracts.schema.json",
+  "$defs": {
+    "Target": {
+      "type": "object",
+      "properties": {
+        "controller_resource_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "job_resource_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "job_full_name": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "controller_resource_id",
+        "job_resource_id",
+        "job_full_name"
+      ],
+      "additionalProperties": false
+    },
+    "Selector": {
+      "type": "object",
+      "properties": {
+        "repository_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "build_number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "library_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "artifact_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "cursor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "JOB_METADATA_READInput": {
+      "type": "object",
+      "properties": {
+        "target_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "selector": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "target_ref",
+        "selector"
+      ],
+      "additionalProperties": false
+    },
+    "JOB_CONFIG_READ_SAFEInput": {
+      "type": "object",
+      "properties": {
+        "target_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "selector": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "target_ref",
+        "selector"
+      ],
+      "additionalProperties": false
+    },
+    "SCM_REFERENCE_RESOLVEInput": {
+      "type": "object",
+      "properties": {
+        "target_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "selector": {
+          "type": "object",
+          "properties": {
+            "repository_ref": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "repository_ref",
+            "revision"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "target_ref",
+        "selector"
+      ],
+      "additionalProperties": false
+    },
+    "SCM_FILE_READInput": {
+      "type": "object",
+      "properties": {
+        "target_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "selector": {
+          "type": "object",
+          "properties": {
+            "repository_ref": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cursor": {
+              "type": "string",
+              "minLength": 1
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "limit_bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1048576
+            }
+          },
+          "required": [
+            "repository_ref",
+            "revision",
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "target_ref",
+        "selector"
+      ],
+      "additionalProperties": false
+    },
+    "LIBRARY_CONFIG_READInput": {
+      "type": "object",
+      "properties": {
+        "target_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "selector": {
+          "type": "object",
+          "properties": {
+            "library_ref": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            }
+          },
+          "required": [
+            "library_ref"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "target_ref",
+        "selector"
+      ],
+      "additionalProperties": false
+    },
+    "BUILD_METADATA_READInput": {
+      "type": "object",
+      "properties": {
+        "target_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "selector": {
+          "type": "object",
+          "properties": {
+            "build_number": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "build_number"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "target_ref",
+        "selector"
+      ],
+      "additionalProperties": false
+    },
+    "BUILD_LOG_READ_SAFEInput": {
+      "type": "object",
+      "properties": {
+        "target_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "selector": {
+          "type": "object",
+          "properties": {
+            "build_number": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "cursor": {
+              "type": "string",
+              "minLength": 1
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "limit_bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1048576
+            }
+          },
+          "required": [
+            "build_number"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "target_ref",
+        "selector"
+      ],
+      "additionalProperties": false
+    },
+    "ARTIFACT_READ_SAFEInput": {
+      "type": "object",
+      "properties": {
+        "target_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "selector": {
+          "type": "object",
+          "properties": {
+            "build_number": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "artifact_ref": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            },
+            "cursor": {
+              "type": "string",
+              "minLength": 1
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "limit_bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1048576
+            }
+          },
+          "required": [
+            "build_number",
+            "artifact_ref"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "target_ref",
+        "selector"
+      ],
+      "additionalProperties": false
+    },
+    "SafeEvidence": {
+      "type": "object",
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "target_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "command_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "source_revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "capture_status": {
+          "enum": [
+            "COMPLETE",
+            "BOUNDED_EXCERPT"
+          ]
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "safe_content": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent_evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "evidence_id",
+        "target_ref",
+        "command_id",
+        "source_revision",
+        "observed_at",
+        "capture_status",
+        "policy_version",
+        "safe_content",
+        "parent_evidence_refs"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

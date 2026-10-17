@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/devops/jenkins-job-delete/v1/connector-binding.schema.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "PUBLISHED",
+        "DISABLED"
+      ]
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "transport": {
+      "const": "MCP"
+    },
+    "connection_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "credential_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "trust_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "adapter_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "capability_id": {
+            "enum": [
+              "jenkins.job.inspect",
+              "jenkins.job.config.read",
+              "jenkins.job.delete"
+            ]
+          },
+          "tool_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tool_schema_sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input_mapping_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "output_parser_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "authoritative_absence_proof_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "capability_id",
+          "tool_name",
+          "tool_schema_sha256",
+          "input_mapping_ref",
+          "output_parser_ref",
+          "authoritative_absence_proof_ref"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 3,
+      "maxItems": 3
+    }
+  },
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "enabled",
+    "transport",
+    "connection_ref",
+    "credential_ref",
+    "trust_ref",
+    "adapter_version",
+    "mappings"
+  ],
+  "additionalProperties": false
+}

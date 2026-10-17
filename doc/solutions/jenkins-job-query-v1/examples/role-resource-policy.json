@@ -1,0 +1,22 @@
+{
+  "policy_version": "QUERY-ACCESS-V2",
+  "default_role": "DENY",
+  "query_roles": [
+    "ADMIN",
+    "NORMAL_USER"
+  ],
+  "query_scope": "ALL_INTEGRATED_QUERY",
+  "query_view": "COMMON_QUERY_SAFE",
+  "role_specific_non_sensitive_masking": false,
+  "normal_query_enabled_deprecated": true,
+  "change_roles": [
+    "ADMIN"
+  ],
+  "require_fixed_change_plan": true,
+  "require_change_confirmation": true,
+  "forbidden_query_categories": [
+    "AUTHENTICATION_CREDENTIALS",
+    "SECRETS",
+    "CONVERSATION_CONTENT"
+  ]
+}

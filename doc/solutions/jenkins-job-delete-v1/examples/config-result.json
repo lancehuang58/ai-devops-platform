@@ -1,0 +1,14 @@
+{
+  "target": {
+    "controller_resource_id": "RES-JENKINS-TEST-001",
+    "job_resource_id": "RES-JOB-DELETE-001",
+    "job_full_name": "sandbox/delete-me"
+  },
+  "observed_at": "2026-09-29T03:00:10Z",
+  "evidence_ref": "EV-S20",
+  "complete": true,
+  "representation": "SOURCE_BYTES",
+  "content_base64": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48Zmxvdy1kZWZpbml0aW9uPjxkZXNjcmlwdGlvbj5URVNUIE9OTFk8L2Rlc2NyaXB0aW9uPjwvZmxvdy1kZWZpbml0aW9uPg==",
+  "byte_length": 109,
+  "sha256": "af25c6c147f248f52f182ba2c977c5c843940bfb3d6c2b045de1ae9a9359430b"
+}

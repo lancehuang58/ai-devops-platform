@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/devops/jenkins-job-query/v1/query-command.schema.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "command_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "TESTED",
+        "PUBLISHED",
+        "DISABLED"
+      ]
+    },
+    "capability_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "command_type": {
+      "const": "QUERY"
+    },
+    "transport": {
+      "const": "MCP"
+    },
+    "read_only": {
+      "const": true
+    },
+    "external_business_side_effects": {
+      "const": false
+    },
+    "allowed_roles": {
+      "const": [
+        "ADMIN",
+        "NORMAL_USER"
+      ]
+    },
+    "view": {
+      "const": "COMMON_QUERY_SAFE"
+    },
+    "input_schema_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "output_schema_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "binding_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "read_only_proof_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "parser_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sensitivity_policy_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "retry_count": {
+      "const": 0
+    },
+    "fallback_allowed": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "command_id",
+    "version",
+    "status",
+    "capability_id",
+    "command_type",
+    "transport",
+    "read_only",
+    "external_business_side_effects",
+    "allowed_roles",
+    "view",
+    "input_schema_ref",
+    "output_schema_ref",
+    "binding_ref",
+    "read_only_proof_ref",
+    "parser_ref",
+    "sensitivity_policy_ref",
+    "timeout_seconds",
+    "retry_count",
+    "fallback_allowed"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "PUBLISHED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "binding_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "read_only_proof_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "parser_ref": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

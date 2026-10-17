@@ -1,0 +1,256 @@
+{
+  "scope": "STATIC_ARTIFACT_VALIDATION_ONLY",
+  "generated_at": "2026-09-29T05:20:47.450433+00:00",
+  "validator_version": "4.26.0",
+  "schema_count": 5,
+  "negative_fixture_count": 17,
+  "passed_checks": 60,
+  "failed_checks": 0,
+  "qwen_contacted": false,
+  "mcp_contacted": false,
+  "production_code_tested": false,
+  "database_tested": false,
+  "business_case_status": "NOT_RUN",
+  "checks": [
+    {
+      "name": "schema:query-contracts.schema.json",
+      "passed": true
+    },
+    {
+      "name": "schema:query-command.schema.json",
+      "passed": true
+    },
+    {
+      "name": "schema:query-answer.schema.json",
+      "passed": true
+    },
+    {
+      "name": "schema:read-decision.schema.json",
+      "passed": true
+    },
+    {
+      "name": "schema:query-solution.schema.json",
+      "passed": true
+    },
+    {
+      "name": "positive:profile",
+      "passed": true
+    },
+    {
+      "name": "positive:JOB_METADATA_READ",
+      "passed": true
+    },
+    {
+      "name": "positive:JOB_CONFIG_READ_SAFE",
+      "passed": true
+    },
+    {
+      "name": "positive:SCM_REFERENCE_RESOLVE",
+      "passed": true
+    },
+    {
+      "name": "positive:SCM_FILE_READ",
+      "passed": true
+    },
+    {
+      "name": "positive:LIBRARY_CONFIG_READ",
+      "passed": true
+    },
+    {
+      "name": "positive:BUILD_METADATA_READ",
+      "passed": true
+    },
+    {
+      "name": "positive:BUILD_LOG_READ_SAFE",
+      "passed": true
+    },
+    {
+      "name": "positive:ARTIFACT_READ_SAFE",
+      "passed": true
+    },
+    {
+      "name": "positive:read",
+      "passed": true
+    },
+    {
+      "name": "positive:answer-decision",
+      "passed": true
+    },
+    {
+      "name": "positive:needs-input",
+      "passed": true
+    },
+    {
+      "name": "positive:stop-decision",
+      "passed": true
+    },
+    {
+      "name": "positive:answer",
+      "passed": true
+    },
+    {
+      "name": "negative:change-mode",
+      "passed": true
+    },
+    {
+      "name": "negative:requires-idle",
+      "passed": true
+    },
+    {
+      "name": "negative:admin-only-query",
+      "passed": true
+    },
+    {
+      "name": "negative:fallback-enabled",
+      "passed": true
+    },
+    {
+      "name": "negative:zero-budget",
+      "passed": true
+    },
+    {
+      "name": "negative:change-command",
+      "passed": true
+    },
+    {
+      "name": "negative:side-effects",
+      "passed": true
+    },
+    {
+      "name": "negative:published-without-binding",
+      "passed": true
+    },
+    {
+      "name": "negative:retry",
+      "passed": true
+    },
+    {
+      "name": "negative:model-self-authorize",
+      "passed": true
+    },
+    {
+      "name": "negative:arbitrary-shell",
+      "passed": true
+    },
+    {
+      "name": "negative:missing-relation",
+      "passed": true
+    },
+    {
+      "name": "negative:no-basis",
+      "passed": true
+    },
+    {
+      "name": "negative:no-citation",
+      "passed": true
+    },
+    {
+      "name": "negative:complete-with-gap",
+      "passed": true
+    },
+    {
+      "name": "negative:invalid-time",
+      "passed": true
+    },
+    {
+      "name": "negative:partial-without-gap",
+      "passed": true
+    },
+    {
+      "name": "references:entry-commands",
+      "passed": true
+    },
+    {
+      "name": "reference:JOB_METADATA_READ:input_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:JOB_METADATA_READ:output_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:JOB_CONFIG_READ_SAFE:input_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:JOB_CONFIG_READ_SAFE:output_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:SCM_REFERENCE_RESOLVE:input_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:SCM_REFERENCE_RESOLVE:output_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:SCM_FILE_READ:input_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:SCM_FILE_READ:output_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:LIBRARY_CONFIG_READ:input_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:LIBRARY_CONFIG_READ:output_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:BUILD_METADATA_READ:input_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:BUILD_METADATA_READ:output_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:BUILD_LOG_READ_SAFE:input_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:BUILD_LOG_READ_SAFE:output_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:ARTIFACT_READ_SAFE:input_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "reference:ARTIFACT_READ_SAFE:output_schema_ref",
+      "passed": true
+    },
+    {
+      "name": "read:per-command-input",
+      "passed": true
+    },
+    {
+      "name": "read:wrong-command-selector-rejected",
+      "passed": true
+    },
+    {
+      "name": "draft-only",
+      "passed": true
+    },
+    {
+      "name": "bindings-disabled",
+      "passed": true
+    },
+    {
+      "name": "cases:12-mq-20-st",
+      "passed": true
+    },
+    {
+      "name": "cases:unique-ids",
+      "passed": true
+    },
+    {
+      "name": "cases:not-run",
+      "passed": true
+    }
+  ]
+}

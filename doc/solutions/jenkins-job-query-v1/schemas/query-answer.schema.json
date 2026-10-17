@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/devops/jenkins-job-query/v1/query-answer.schema.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "work_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "answer_status": {
+      "enum": [
+        "COMPLETE",
+        "PARTIAL",
+        "NOT_FOUND",
+        "NEEDS_INPUT",
+        "STOPPED_ERROR"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "FACT",
+              "OBSERVED",
+              "INFERENCE"
+            ]
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            },
+            "uniqueItems": true,
+            "minItems": 1
+          }
+        },
+        "required": [
+          "text",
+          "kind",
+          "evidence_refs"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "unresolved_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason_code": {
+            "enum": [
+              "CAPABILITY_UNAVAILABLE",
+              "SOURCE_NOT_FOUND",
+              "INSUFFICIENT_EVIDENCE",
+              "WITHHELD_SENSITIVE",
+              "VERSION_CONFLICT",
+              "BUDGET_EXHAUSTED",
+              "NO_PROGRESS",
+              "TECHNICAL_FAILURE",
+              "NEEDS_INPUT"
+            ]
+          }
+        },
+        "required": [
+          "topic",
+          "reason_code"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+      },
+      "uniqueItems": true
+    },
+    "retrieved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "policy_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tool_call_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "model_call_count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "schema_version",
+    "work_id",
+    "answer_status",
+    "summary",
+    "claims",
+    "unresolved_items",
+    "evidence_refs",
+    "retrieved_at",
+    "policy_version",
+    "tool_call_count",
+    "model_call_count"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "answer_status": {
+            "const": "COMPLETE"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "unresolved_items": {
+            "maxItems": 0
+          },
+          "claims": {
+            "minItems": 1
+          },
+          "evidence_refs": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "answer_status": {
+            "enum": [
+              "PARTIAL",
+              "NEEDS_INPUT",
+              "STOPPED_ERROR"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "unresolved_items": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
+}

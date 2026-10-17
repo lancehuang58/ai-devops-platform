@@ -1,0 +1,73 @@
+{
+  "status": "DRAFT",
+  "enabled": false,
+  "connection_ref": null,
+  "credential_ref": null,
+  "trust_ref": null,
+  "bindings": [
+    {
+      "capability_id": "jenkins.job.metadata.read",
+      "actual_tool_name": null,
+      "tool_schema_sha256": null,
+      "input_mapper_ref": null,
+      "output_parser_ref": null,
+      "read_only_proof_ref": null
+    },
+    {
+      "capability_id": "jenkins.job.config.read_safe",
+      "actual_tool_name": null,
+      "tool_schema_sha256": null,
+      "input_mapper_ref": null,
+      "output_parser_ref": null,
+      "read_only_proof_ref": null
+    },
+    {
+      "capability_id": "scm.reference.resolve",
+      "actual_tool_name": null,
+      "tool_schema_sha256": null,
+      "input_mapper_ref": null,
+      "output_parser_ref": null,
+      "read_only_proof_ref": null
+    },
+    {
+      "capability_id": "scm.file.read",
+      "actual_tool_name": null,
+      "tool_schema_sha256": null,
+      "input_mapper_ref": null,
+      "output_parser_ref": null,
+      "read_only_proof_ref": null
+    },
+    {
+      "capability_id": "jenkins.library.config.read",
+      "actual_tool_name": null,
+      "tool_schema_sha256": null,
+      "input_mapper_ref": null,
+      "output_parser_ref": null,
+      "read_only_proof_ref": null
+    },
+    {
+      "capability_id": "jenkins.build.metadata.read",
+      "actual_tool_name": null,
+      "tool_schema_sha256": null,
+      "input_mapper_ref": null,
+      "output_parser_ref": null,
+      "read_only_proof_ref": null
+    },
+    {
+      "capability_id": "jenkins.build.log.read_safe",
+      "actual_tool_name": null,
+      "tool_schema_sha256": null,
+      "input_mapper_ref": null,
+      "output_parser_ref": null,
+      "read_only_proof_ref": null
+    },
+    {
+      "capability_id": "jenkins.artifact.read_safe",
+      "actual_tool_name": null,
+      "tool_schema_sha256": null,
+      "input_mapper_ref": null,
+      "output_parser_ref": null,
+      "read_only_proof_ref": null
+    }
+  ]
+}

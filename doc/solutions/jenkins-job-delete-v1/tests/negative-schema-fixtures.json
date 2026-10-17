@@ -1,0 +1,1224 @@
+[
+  {
+    "name": "delete-repeat",
+    "schema": "solution-definition.schema.json",
+    "definition": null,
+    "input": {
+      "schema_version": "1.0.0",
+      "solution_id": "SOL-JENKINS-JOB-DELETE",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "name": "備份並刪除單一 Jenkins Job",
+      "request_type": "MAINTENANCE_REQUEST",
+      "intent": "DELETE_JENKINS_JOB",
+      "workflow_profile": "JENKINS_JOB_DELETE_V1",
+      "input_contract": "contracts.schema.json#/$defs/Target",
+      "max_targets": 1,
+      "allowed_job_kinds": [
+        "FREESTYLE",
+        "PIPELINE"
+      ],
+      "exclude_multibranch_branch": true,
+      "transport": "MCP",
+      "authorization": {
+        "required_role": "ADMIN",
+        "confirmation_mode": "WHOLE_PLAN_ONCE",
+        "after_step_id": "S10",
+        "expires_after_seconds": 300,
+        "recheck_before_each_step": true
+      },
+      "backup_policy": {
+        "storage": "BOT_DATABASE",
+        "content": "CONFIG_XML_ONLY",
+        "verify": "COMMIT_READBACK_SHA256_AND_LENGTH",
+        "retention_days": 90,
+        "protect_unknown_or_pending_human": true,
+        "raw_read_role": "ADMIN",
+        "auto_restore": false
+      },
+      "execution_policy": {
+        "retry_count": 0,
+        "fallback_allowed": false,
+        "auto_resume": false,
+        "auto_rollback": false,
+        "verify_after_fault": false,
+        "max_delete_dispatches": 2,
+        "max_verify_probes": 1,
+        "max_external_calls": 6,
+        "workflow_timeout_seconds": 180,
+        "observation_max_age_seconds": 30,
+        "final_config_max_age_seconds": 30,
+        "max_config_bytes": 10485760,
+        "report_mode": "FIXED_TEMPLATE",
+        "lock_scope": "CONTROLLER_AND_FULL_JOB_NAME",
+        "verification_timeout_seconds": 45,
+        "settle_delay_seconds": 0,
+        "poll_interval_seconds": null,
+        "required_success_count": 1,
+        "observation_duration_seconds": 0
+      },
+      "steps": [
+        {
+          "step_id": "S10",
+          "kind": "COMMAND",
+          "phase": "PREPARE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "INITIAL_JOB_GATE"
+        },
+        {
+          "step_id": "S20",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "COMPLETE_CONFIG_GATE"
+        },
+        {
+          "step_id": "S30",
+          "kind": "INTERNAL",
+          "phase": "EXECUTE",
+          "handler": "BACKUP_COMMIT_AND_READBACK",
+          "input_bindings": {
+            "config": "steps.S20.output"
+          },
+          "result_gate": "BACKUP_VERIFIED_GATE"
+        },
+        {
+          "step_id": "S40",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "CONFIG_EQUALS_BACKUP_GATE"
+        },
+        {
+          "step_id": "S50",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "FINAL_JOB_GATE"
+        },
+        {
+          "step_id": "S60",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-DELETE",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "DELETE_ACK_GATE"
+        },
+        {
+          "step_id": "S70",
+          "kind": "COMMAND",
+          "phase": "VERIFY",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-VERIFY-ABSENT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "AUTHORITATIVE_ABSENCE_GATE"
+        }
+      ],
+      "final_report_contract": "contracts.schema.json#/$defs/ExecutionReport"
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "fallback-enabled",
+    "schema": "solution-definition.schema.json",
+    "definition": null,
+    "input": {
+      "schema_version": "1.0.0",
+      "solution_id": "SOL-JENKINS-JOB-DELETE",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "name": "備份並刪除單一 Jenkins Job",
+      "request_type": "MAINTENANCE_REQUEST",
+      "intent": "DELETE_JENKINS_JOB",
+      "workflow_profile": "JENKINS_JOB_DELETE_V1",
+      "input_contract": "contracts.schema.json#/$defs/Target",
+      "max_targets": 1,
+      "allowed_job_kinds": [
+        "FREESTYLE",
+        "PIPELINE"
+      ],
+      "exclude_multibranch_branch": true,
+      "transport": "MCP",
+      "authorization": {
+        "required_role": "ADMIN",
+        "confirmation_mode": "WHOLE_PLAN_ONCE",
+        "after_step_id": "S10",
+        "expires_after_seconds": 300,
+        "recheck_before_each_step": true
+      },
+      "backup_policy": {
+        "storage": "BOT_DATABASE",
+        "content": "CONFIG_XML_ONLY",
+        "verify": "COMMIT_READBACK_SHA256_AND_LENGTH",
+        "retention_days": 90,
+        "protect_unknown_or_pending_human": true,
+        "raw_read_role": "ADMIN",
+        "auto_restore": false
+      },
+      "execution_policy": {
+        "retry_count": 0,
+        "fallback_allowed": true,
+        "auto_resume": false,
+        "auto_rollback": false,
+        "verify_after_fault": false,
+        "max_delete_dispatches": 1,
+        "max_verify_probes": 1,
+        "max_external_calls": 6,
+        "workflow_timeout_seconds": 180,
+        "observation_max_age_seconds": 30,
+        "final_config_max_age_seconds": 30,
+        "max_config_bytes": 10485760,
+        "report_mode": "FIXED_TEMPLATE",
+        "lock_scope": "CONTROLLER_AND_FULL_JOB_NAME",
+        "verification_timeout_seconds": 45,
+        "settle_delay_seconds": 0,
+        "poll_interval_seconds": null,
+        "required_success_count": 1,
+        "observation_duration_seconds": 0
+      },
+      "steps": [
+        {
+          "step_id": "S10",
+          "kind": "COMMAND",
+          "phase": "PREPARE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "INITIAL_JOB_GATE"
+        },
+        {
+          "step_id": "S20",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "COMPLETE_CONFIG_GATE"
+        },
+        {
+          "step_id": "S30",
+          "kind": "INTERNAL",
+          "phase": "EXECUTE",
+          "handler": "BACKUP_COMMIT_AND_READBACK",
+          "input_bindings": {
+            "config": "steps.S20.output"
+          },
+          "result_gate": "BACKUP_VERIFIED_GATE"
+        },
+        {
+          "step_id": "S40",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "CONFIG_EQUALS_BACKUP_GATE"
+        },
+        {
+          "step_id": "S50",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "FINAL_JOB_GATE"
+        },
+        {
+          "step_id": "S60",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-DELETE",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "DELETE_ACK_GATE"
+        },
+        {
+          "step_id": "S70",
+          "kind": "COMMAND",
+          "phase": "VERIFY",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-VERIFY-ABSENT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "AUTHORITATIVE_ABSENCE_GATE"
+        }
+      ],
+      "final_report_contract": "contracts.schema.json#/$defs/ExecutionReport"
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "skip-backup-step",
+    "schema": "solution-definition.schema.json",
+    "definition": null,
+    "input": {
+      "schema_version": "1.0.0",
+      "solution_id": "SOL-JENKINS-JOB-DELETE",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "name": "備份並刪除單一 Jenkins Job",
+      "request_type": "MAINTENANCE_REQUEST",
+      "intent": "DELETE_JENKINS_JOB",
+      "workflow_profile": "JENKINS_JOB_DELETE_V1",
+      "input_contract": "contracts.schema.json#/$defs/Target",
+      "max_targets": 1,
+      "allowed_job_kinds": [
+        "FREESTYLE",
+        "PIPELINE"
+      ],
+      "exclude_multibranch_branch": true,
+      "transport": "MCP",
+      "authorization": {
+        "required_role": "ADMIN",
+        "confirmation_mode": "WHOLE_PLAN_ONCE",
+        "after_step_id": "S10",
+        "expires_after_seconds": 300,
+        "recheck_before_each_step": true
+      },
+      "backup_policy": {
+        "storage": "BOT_DATABASE",
+        "content": "CONFIG_XML_ONLY",
+        "verify": "COMMIT_READBACK_SHA256_AND_LENGTH",
+        "retention_days": 90,
+        "protect_unknown_or_pending_human": true,
+        "raw_read_role": "ADMIN",
+        "auto_restore": false
+      },
+      "execution_policy": {
+        "retry_count": 0,
+        "fallback_allowed": false,
+        "auto_resume": false,
+        "auto_rollback": false,
+        "verify_after_fault": false,
+        "max_delete_dispatches": 1,
+        "max_verify_probes": 1,
+        "max_external_calls": 6,
+        "workflow_timeout_seconds": 180,
+        "observation_max_age_seconds": 30,
+        "final_config_max_age_seconds": 30,
+        "max_config_bytes": 10485760,
+        "report_mode": "FIXED_TEMPLATE",
+        "lock_scope": "CONTROLLER_AND_FULL_JOB_NAME",
+        "verification_timeout_seconds": 45,
+        "settle_delay_seconds": 0,
+        "poll_interval_seconds": null,
+        "required_success_count": 1,
+        "observation_duration_seconds": 0
+      },
+      "steps": [
+        {
+          "step_id": "S10",
+          "kind": "COMMAND",
+          "phase": "PREPARE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "INITIAL_JOB_GATE"
+        },
+        {
+          "step_id": "S20",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "COMPLETE_CONFIG_GATE"
+        },
+        {
+          "step_id": "S40",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "CONFIG_EQUALS_BACKUP_GATE"
+        },
+        {
+          "step_id": "S50",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "FINAL_JOB_GATE"
+        },
+        {
+          "step_id": "S60",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-DELETE",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "DELETE_ACK_GATE"
+        },
+        {
+          "step_id": "S70",
+          "kind": "COMMAND",
+          "phase": "VERIFY",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-VERIFY-ABSENT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "AUTHORITATIVE_ABSENCE_GATE"
+        }
+      ],
+      "final_report_contract": "contracts.schema.json#/$defs/ExecutionReport"
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "swapped-steps",
+    "schema": "solution-definition.schema.json",
+    "definition": null,
+    "input": {
+      "schema_version": "1.0.0",
+      "solution_id": "SOL-JENKINS-JOB-DELETE",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "name": "備份並刪除單一 Jenkins Job",
+      "request_type": "MAINTENANCE_REQUEST",
+      "intent": "DELETE_JENKINS_JOB",
+      "workflow_profile": "JENKINS_JOB_DELETE_V1",
+      "input_contract": "contracts.schema.json#/$defs/Target",
+      "max_targets": 1,
+      "allowed_job_kinds": [
+        "FREESTYLE",
+        "PIPELINE"
+      ],
+      "exclude_multibranch_branch": true,
+      "transport": "MCP",
+      "authorization": {
+        "required_role": "ADMIN",
+        "confirmation_mode": "WHOLE_PLAN_ONCE",
+        "after_step_id": "S10",
+        "expires_after_seconds": 300,
+        "recheck_before_each_step": true
+      },
+      "backup_policy": {
+        "storage": "BOT_DATABASE",
+        "content": "CONFIG_XML_ONLY",
+        "verify": "COMMIT_READBACK_SHA256_AND_LENGTH",
+        "retention_days": 90,
+        "protect_unknown_or_pending_human": true,
+        "raw_read_role": "ADMIN",
+        "auto_restore": false
+      },
+      "execution_policy": {
+        "retry_count": 0,
+        "fallback_allowed": false,
+        "auto_resume": false,
+        "auto_rollback": false,
+        "verify_after_fault": false,
+        "max_delete_dispatches": 1,
+        "max_verify_probes": 1,
+        "max_external_calls": 6,
+        "workflow_timeout_seconds": 180,
+        "observation_max_age_seconds": 30,
+        "final_config_max_age_seconds": 30,
+        "max_config_bytes": 10485760,
+        "report_mode": "FIXED_TEMPLATE",
+        "lock_scope": "CONTROLLER_AND_FULL_JOB_NAME",
+        "verification_timeout_seconds": 45,
+        "settle_delay_seconds": 0,
+        "poll_interval_seconds": null,
+        "required_success_count": 1,
+        "observation_duration_seconds": 0
+      },
+      "steps": [
+        {
+          "step_id": "S70",
+          "kind": "COMMAND",
+          "phase": "VERIFY",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-VERIFY-ABSENT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "AUTHORITATIVE_ABSENCE_GATE"
+        },
+        {
+          "step_id": "S60",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-DELETE",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "DELETE_ACK_GATE"
+        },
+        {
+          "step_id": "S50",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "FINAL_JOB_GATE"
+        },
+        {
+          "step_id": "S40",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "CONFIG_EQUALS_BACKUP_GATE"
+        },
+        {
+          "step_id": "S30",
+          "kind": "INTERNAL",
+          "phase": "EXECUTE",
+          "handler": "BACKUP_COMMIT_AND_READBACK",
+          "input_bindings": {
+            "config": "steps.S20.output"
+          },
+          "result_gate": "BACKUP_VERIFIED_GATE"
+        },
+        {
+          "step_id": "S20",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "COMPLETE_CONFIG_GATE"
+        },
+        {
+          "step_id": "S10",
+          "kind": "COMMAND",
+          "phase": "PREPARE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "INITIAL_JOB_GATE"
+        }
+      ],
+      "final_report_contract": "contracts.schema.json#/$defs/ExecutionReport"
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "normal-authorized",
+    "schema": "solution-definition.schema.json",
+    "definition": null,
+    "input": {
+      "schema_version": "1.0.0",
+      "solution_id": "SOL-JENKINS-JOB-DELETE",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "name": "備份並刪除單一 Jenkins Job",
+      "request_type": "MAINTENANCE_REQUEST",
+      "intent": "DELETE_JENKINS_JOB",
+      "workflow_profile": "JENKINS_JOB_DELETE_V1",
+      "input_contract": "contracts.schema.json#/$defs/Target",
+      "max_targets": 1,
+      "allowed_job_kinds": [
+        "FREESTYLE",
+        "PIPELINE"
+      ],
+      "exclude_multibranch_branch": true,
+      "transport": "MCP",
+      "authorization": {
+        "required_role": "NORMAL_USER",
+        "confirmation_mode": "WHOLE_PLAN_ONCE",
+        "after_step_id": "S10",
+        "expires_after_seconds": 300,
+        "recheck_before_each_step": true
+      },
+      "backup_policy": {
+        "storage": "BOT_DATABASE",
+        "content": "CONFIG_XML_ONLY",
+        "verify": "COMMIT_READBACK_SHA256_AND_LENGTH",
+        "retention_days": 90,
+        "protect_unknown_or_pending_human": true,
+        "raw_read_role": "ADMIN",
+        "auto_restore": false
+      },
+      "execution_policy": {
+        "retry_count": 0,
+        "fallback_allowed": false,
+        "auto_resume": false,
+        "auto_rollback": false,
+        "verify_after_fault": false,
+        "max_delete_dispatches": 1,
+        "max_verify_probes": 1,
+        "max_external_calls": 6,
+        "workflow_timeout_seconds": 180,
+        "observation_max_age_seconds": 30,
+        "final_config_max_age_seconds": 30,
+        "max_config_bytes": 10485760,
+        "report_mode": "FIXED_TEMPLATE",
+        "lock_scope": "CONTROLLER_AND_FULL_JOB_NAME",
+        "verification_timeout_seconds": 45,
+        "settle_delay_seconds": 0,
+        "poll_interval_seconds": null,
+        "required_success_count": 1,
+        "observation_duration_seconds": 0
+      },
+      "steps": [
+        {
+          "step_id": "S10",
+          "kind": "COMMAND",
+          "phase": "PREPARE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "INITIAL_JOB_GATE"
+        },
+        {
+          "step_id": "S20",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "COMPLETE_CONFIG_GATE"
+        },
+        {
+          "step_id": "S30",
+          "kind": "INTERNAL",
+          "phase": "EXECUTE",
+          "handler": "BACKUP_COMMIT_AND_READBACK",
+          "input_bindings": {
+            "config": "steps.S20.output"
+          },
+          "result_gate": "BACKUP_VERIFIED_GATE"
+        },
+        {
+          "step_id": "S40",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "CONFIG_EQUALS_BACKUP_GATE"
+        },
+        {
+          "step_id": "S50",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "FINAL_JOB_GATE"
+        },
+        {
+          "step_id": "S60",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-DELETE",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "DELETE_ACK_GATE"
+        },
+        {
+          "step_id": "S70",
+          "kind": "COMMAND",
+          "phase": "VERIFY",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-VERIFY-ABSENT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "AUTHORITATIVE_ABSENCE_GATE"
+        }
+      ],
+      "final_report_contract": "contracts.schema.json#/$defs/ExecutionReport"
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "unprotected-unknown",
+    "schema": "solution-definition.schema.json",
+    "definition": null,
+    "input": {
+      "schema_version": "1.0.0",
+      "solution_id": "SOL-JENKINS-JOB-DELETE",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "name": "備份並刪除單一 Jenkins Job",
+      "request_type": "MAINTENANCE_REQUEST",
+      "intent": "DELETE_JENKINS_JOB",
+      "workflow_profile": "JENKINS_JOB_DELETE_V1",
+      "input_contract": "contracts.schema.json#/$defs/Target",
+      "max_targets": 1,
+      "allowed_job_kinds": [
+        "FREESTYLE",
+        "PIPELINE"
+      ],
+      "exclude_multibranch_branch": true,
+      "transport": "MCP",
+      "authorization": {
+        "required_role": "ADMIN",
+        "confirmation_mode": "WHOLE_PLAN_ONCE",
+        "after_step_id": "S10",
+        "expires_after_seconds": 300,
+        "recheck_before_each_step": true
+      },
+      "backup_policy": {
+        "storage": "BOT_DATABASE",
+        "content": "CONFIG_XML_ONLY",
+        "verify": "COMMIT_READBACK_SHA256_AND_LENGTH",
+        "retention_days": 90,
+        "protect_unknown_or_pending_human": false,
+        "raw_read_role": "ADMIN",
+        "auto_restore": false
+      },
+      "execution_policy": {
+        "retry_count": 0,
+        "fallback_allowed": false,
+        "auto_resume": false,
+        "auto_rollback": false,
+        "verify_after_fault": false,
+        "max_delete_dispatches": 1,
+        "max_verify_probes": 1,
+        "max_external_calls": 6,
+        "workflow_timeout_seconds": 180,
+        "observation_max_age_seconds": 30,
+        "final_config_max_age_seconds": 30,
+        "max_config_bytes": 10485760,
+        "report_mode": "FIXED_TEMPLATE",
+        "lock_scope": "CONTROLLER_AND_FULL_JOB_NAME",
+        "verification_timeout_seconds": 45,
+        "settle_delay_seconds": 0,
+        "poll_interval_seconds": null,
+        "required_success_count": 1,
+        "observation_duration_seconds": 0
+      },
+      "steps": [
+        {
+          "step_id": "S10",
+          "kind": "COMMAND",
+          "phase": "PREPARE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "INITIAL_JOB_GATE"
+        },
+        {
+          "step_id": "S20",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "COMPLETE_CONFIG_GATE"
+        },
+        {
+          "step_id": "S30",
+          "kind": "INTERNAL",
+          "phase": "EXECUTE",
+          "handler": "BACKUP_COMMIT_AND_READBACK",
+          "input_bindings": {
+            "config": "steps.S20.output"
+          },
+          "result_gate": "BACKUP_VERIFIED_GATE"
+        },
+        {
+          "step_id": "S40",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "CONFIG_EQUALS_BACKUP_GATE"
+        },
+        {
+          "step_id": "S50",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "FINAL_JOB_GATE"
+        },
+        {
+          "step_id": "S60",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-DELETE",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "DELETE_ACK_GATE"
+        },
+        {
+          "step_id": "S70",
+          "kind": "COMMAND",
+          "phase": "VERIFY",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-VERIFY-ABSENT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "AUTHORITATIVE_ABSENCE_GATE"
+        }
+      ],
+      "final_report_contract": "contracts.schema.json#/$defs/ExecutionReport"
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "raw-script",
+    "schema": "command-definition.schema.json",
+    "definition": null,
+    "input": {
+      "schema_version": "1.0.0",
+      "command_id": "CMD-JENKINS-JOB-DELETE",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "transport": "MCP",
+      "input_contract": "contracts.schema.json#/$defs/Target",
+      "max_attempts": 1,
+      "retry_count": 0,
+      "fallback_allowed": false,
+      "output_visibility": "ADMIN_RAW_NORMAL_MASKED",
+      "command_type": "CHANGE",
+      "capability_id": "jenkins.job.delete",
+      "output_contract": "contracts.schema.json#/$defs/DeleteAcknowledgement",
+      "timeout_seconds": 30,
+      "allowed_roles": [
+        "ADMIN"
+      ],
+      "required_guards": [
+        "CURRENT_ROLE",
+        "PUBLISHED_VERSIONS",
+        "RESOURCE_MAPPING_VERSION",
+        "FRESH_CORE_AND_DEPENDENCY_HEALTH",
+        "NO_EXECUTION_HOLD",
+        "VALID_OWNER",
+        "PLAN_STEP_ALLOWED",
+        "UNIQUE_DISPATCH_PERMIT",
+        "ADMIN_PLAN_CONFIRMATION",
+        "VERIFIED_BACKUP",
+        "FINAL_PRECHECKS_MATCH"
+      ],
+      "shell": "rm -rf /"
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "delete-as-query",
+    "schema": "command-definition.schema.json",
+    "definition": null,
+    "input": {
+      "schema_version": "1.0.0",
+      "command_id": "CMD-JENKINS-JOB-DELETE",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "transport": "MCP",
+      "input_contract": "contracts.schema.json#/$defs/Target",
+      "max_attempts": 1,
+      "retry_count": 0,
+      "fallback_allowed": false,
+      "output_visibility": "ADMIN_RAW_NORMAL_MASKED",
+      "command_type": "QUERY",
+      "capability_id": "jenkins.job.delete",
+      "output_contract": "contracts.schema.json#/$defs/DeleteAcknowledgement",
+      "timeout_seconds": 30,
+      "allowed_roles": [
+        "ADMIN"
+      ],
+      "required_guards": [
+        "CURRENT_ROLE",
+        "PUBLISHED_VERSIONS",
+        "RESOURCE_MAPPING_VERSION",
+        "FRESH_CORE_AND_DEPENDENCY_HEALTH",
+        "NO_EXECUTION_HOLD",
+        "VALID_OWNER",
+        "PLAN_STEP_ALLOWED",
+        "UNIQUE_DISPATCH_PERMIT",
+        "ADMIN_PLAN_CONFIRMATION",
+        "VERIFIED_BACKUP",
+        "FINAL_PRECHECKS_MATCH"
+      ]
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "wildcard-target",
+    "schema": "contracts.schema.json",
+    "definition": "Target",
+    "input": {
+      "controller_resource_id": "RES-JENKINS-TEST-001",
+      "job_resource_id": "RES-JOB-DELETE-001",
+      "job_full_name": "sandbox/*"
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "partial-config",
+    "schema": "contracts.schema.json",
+    "definition": "ConfigResult",
+    "input": {
+      "target": {
+        "controller_resource_id": "RES-JENKINS-TEST-001",
+        "job_resource_id": "RES-JOB-DELETE-001",
+        "job_full_name": "sandbox/delete-me"
+      },
+      "observed_at": "2026-09-29T03:00:10Z",
+      "evidence_ref": "EV-S20",
+      "complete": false,
+      "representation": "SOURCE_BYTES",
+      "content_base64": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48Zmxvdy1kZWZpbml0aW9uPjxkZXNjcmlwdGlvbj5URVNUIE9OTFk8L2Rlc2NyaXB0aW9uPjwvZmxvdy1kZWZpbml0aW9uPg==",
+      "byte_length": 109,
+      "sha256": "af25c6c147f248f52f182ba2c977c5c843940bfb3d6c2b045de1ae9a9359430b"
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "partial-inspect",
+    "schema": "contracts.schema.json",
+    "definition": "InspectResult",
+    "input": {
+      "target": {
+        "controller_resource_id": "RES-JENKINS-TEST-001",
+        "job_resource_id": "RES-JOB-DELETE-001",
+        "job_full_name": "sandbox/delete-me"
+      },
+      "observed_at": "2026-09-29T03:00:00Z",
+      "evidence_ref": "EV-S10",
+      "presence": "PRESENT",
+      "authoritative": true,
+      "scope_complete": false,
+      "job_kind": "PIPELINE",
+      "is_multibranch_branch": false,
+      "active_build_count": 0,
+      "queued_build_count": 0
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "present-null-count",
+    "schema": "contracts.schema.json",
+    "definition": "InspectResult",
+    "input": {
+      "target": {
+        "controller_resource_id": "RES-JENKINS-TEST-001",
+        "job_resource_id": "RES-JOB-DELETE-001",
+        "job_full_name": "sandbox/delete-me"
+      },
+      "observed_at": "2026-09-29T03:00:00Z",
+      "evidence_ref": "EV-S10",
+      "presence": "PRESENT",
+      "authoritative": true,
+      "scope_complete": true,
+      "job_kind": "PIPELINE",
+      "is_multibranch_branch": false,
+      "active_build_count": null,
+      "queued_build_count": 0
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "absence-fake-count",
+    "schema": "contracts.schema.json",
+    "definition": "InspectResult",
+    "input": {
+      "target": {
+        "controller_resource_id": "RES-JENKINS-TEST-001",
+        "job_resource_id": "RES-JOB-DELETE-001",
+        "job_full_name": "sandbox/delete-me"
+      },
+      "observed_at": "2026-09-29T03:00:00Z",
+      "evidence_ref": "EV-S70",
+      "presence": "ABSENT",
+      "authoritative": true,
+      "scope_complete": true,
+      "job_kind": null,
+      "is_multibranch_branch": null,
+      "active_build_count": 0,
+      "queued_build_count": null
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "untrusted-absence",
+    "schema": "contracts.schema.json",
+    "definition": "InspectResult",
+    "input": {
+      "target": {
+        "controller_resource_id": "RES-JENKINS-TEST-001",
+        "job_resource_id": "RES-JOB-DELETE-001",
+        "job_full_name": "sandbox/delete-me"
+      },
+      "observed_at": "2026-09-29T03:00:00Z",
+      "evidence_ref": "EV-S70",
+      "presence": "ABSENT",
+      "authoritative": false,
+      "scope_complete": true,
+      "job_kind": null,
+      "is_multibranch_branch": null,
+      "active_build_count": null,
+      "queued_build_count": null
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "invalid-time",
+    "schema": "contracts.schema.json",
+    "definition": "InspectResult",
+    "input": {
+      "target": {
+        "controller_resource_id": "RES-JENKINS-TEST-001",
+        "job_resource_id": "RES-JOB-DELETE-001",
+        "job_full_name": "sandbox/delete-me"
+      },
+      "observed_at": "yesterday",
+      "evidence_ref": "EV-S10",
+      "presence": "PRESENT",
+      "authoritative": true,
+      "scope_complete": true,
+      "job_kind": "PIPELINE",
+      "is_multibranch_branch": false,
+      "active_build_count": 0,
+      "queued_build_count": 0
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "success-without-backup",
+    "schema": "contracts.schema.json",
+    "definition": "ExecutionReport",
+    "input": {
+      "schema_version": "1.0.0",
+      "work_id": "REQ-TEST-001",
+      "plan_id": "PLAN-TEST-001",
+      "execution_id": "EXEC-TEST-001",
+      "solution_id": "SOL-JENKINS-JOB-DELETE",
+      "solution_version": "1.0.0",
+      "target": {
+        "controller_resource_id": "RES-JENKINS-TEST-001",
+        "job_resource_id": "RES-JOB-DELETE-001",
+        "job_full_name": "sandbox/delete-me"
+      },
+      "result": "SUCCESS",
+      "reason_code": "DELETED_AND_VERIFIED_ABSENT",
+      "delete_dispatch_count": 1,
+      "backup_id": null,
+      "backup_sha256": "af25c6c147f248f52f182ba2c977c5c843940bfb3d6c2b045de1ae9a9359430b",
+      "verification_evidence_ref": "EV-S70",
+      "work_status": "COMPLETED",
+      "requires_human_review": false,
+      "created_at": "2026-09-29T03:00:30Z"
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "success-without-verify",
+    "schema": "contracts.schema.json",
+    "definition": "ExecutionReport",
+    "input": {
+      "schema_version": "1.0.0",
+      "work_id": "REQ-TEST-001",
+      "plan_id": "PLAN-TEST-001",
+      "execution_id": "EXEC-TEST-001",
+      "solution_id": "SOL-JENKINS-JOB-DELETE",
+      "solution_version": "1.0.0",
+      "target": {
+        "controller_resource_id": "RES-JENKINS-TEST-001",
+        "job_resource_id": "RES-JOB-DELETE-001",
+        "job_full_name": "sandbox/delete-me"
+      },
+      "result": "SUCCESS",
+      "reason_code": "DELETED_AND_VERIFIED_ABSENT",
+      "delete_dispatch_count": 1,
+      "backup_id": "BACKUP-TEST-001",
+      "backup_sha256": "af25c6c147f248f52f182ba2c977c5c843940bfb3d6c2b045de1ae9a9359430b",
+      "verification_evidence_ref": null,
+      "work_status": "COMPLETED",
+      "requires_human_review": false,
+      "created_at": "2026-09-29T03:00:30Z"
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "unknown-completed",
+    "schema": "contracts.schema.json",
+    "definition": "ExecutionReport",
+    "input": {
+      "schema_version": "1.0.0",
+      "work_id": "REQ-TEST-001",
+      "plan_id": "PLAN-TEST-001",
+      "execution_id": "EXEC-TEST-001",
+      "solution_id": "SOL-JENKINS-JOB-DELETE",
+      "solution_version": "1.0.0",
+      "target": {
+        "controller_resource_id": "RES-JENKINS-TEST-001",
+        "job_resource_id": "RES-JOB-DELETE-001",
+        "job_full_name": "sandbox/delete-me"
+      },
+      "result": "UNKNOWN",
+      "reason_code": "DELETE_TIMEOUT",
+      "delete_dispatch_count": 1,
+      "backup_id": "BACKUP-TEST-001",
+      "backup_sha256": "af25c6c147f248f52f182ba2c977c5c843940bfb3d6c2b045de1ae9a9359430b",
+      "verification_evidence_ref": null,
+      "work_status": "COMPLETED",
+      "requires_human_review": true,
+      "created_at": "2026-09-29T03:00:30Z"
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "model-self-authorize",
+    "schema": "contracts.schema.json",
+    "definition": "IntentCandidate",
+    "input": {
+      "intent": "DELETE_JENKINS_JOB",
+      "candidate_solution_id": "SOL-JENKINS-JOB-DELETE",
+      "candidate_solution_version": "1.0.0",
+      "target_hints": {
+        "controller_hint": "TEST Jenkins",
+        "job_full_name_hint": "sandbox/delete-me"
+      },
+      "clarification_fields": [],
+      "explanation": "使用者要求備份並刪除一個明確 Job；尚未獲得執行確認。",
+      "authorized": true
+    },
+    "expected_schema_valid": false
+  }
+]

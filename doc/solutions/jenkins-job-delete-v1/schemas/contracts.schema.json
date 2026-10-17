@@ -1,0 +1,541 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/devops/jenkins-job-delete/v1/contracts.schema.json",
+  "$defs": {
+    "Target": {
+      "type": "object",
+      "properties": {
+        "controller_resource_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "job_resource_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "job_full_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^(?!/)(?!.*//)(?!.*[\\u0000-\\u001f\\u007f*?\\[\\]\\\\])[^/]+(?:/[^/]+)*$"
+        }
+      },
+      "required": [
+        "controller_resource_id",
+        "job_resource_id",
+        "job_full_name"
+      ],
+      "additionalProperties": false
+    },
+    "InspectResult": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "contracts.schema.json#/$defs/Target"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evidence_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "presence": {
+          "enum": [
+            "PRESENT",
+            "ABSENT"
+          ]
+        },
+        "authoritative": {
+          "const": true
+        },
+        "scope_complete": {
+          "const": true
+        },
+        "job_kind": {
+          "enum": [
+            "FREESTYLE",
+            "PIPELINE",
+            "FOLDER",
+            "MULTIBRANCH",
+            "OTHER",
+            "UNKNOWN",
+            null
+          ]
+        },
+        "is_multibranch_branch": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "active_build_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "queued_build_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "required": [
+        "target",
+        "observed_at",
+        "evidence_ref",
+        "presence",
+        "authoritative",
+        "scope_complete",
+        "job_kind",
+        "is_multibranch_branch",
+        "active_build_count",
+        "queued_build_count"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "presence": {
+                "const": "ABSENT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "job_kind": {
+                "const": null
+              },
+              "is_multibranch_branch": {
+                "const": null
+              },
+              "active_build_count": {
+                "const": null
+              },
+              "queued_build_count": {
+                "const": null
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "job_kind": {
+                "enum": [
+                  "FREESTYLE",
+                  "PIPELINE",
+                  "FOLDER",
+                  "MULTIBRANCH",
+                  "OTHER",
+                  "UNKNOWN"
+                ]
+              },
+              "is_multibranch_branch": {
+                "type": "boolean"
+              },
+              "active_build_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "queued_build_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ConfigResult": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "contracts.schema.json#/$defs/Target"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evidence_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "complete": {
+          "const": true
+        },
+        "representation": {
+          "enum": [
+            "SOURCE_BYTES",
+            "UTF8_FROM_TOOL_TEXT"
+          ]
+        },
+        "content_base64": {
+          "type": "string",
+          "minLength": 4,
+          "contentEncoding": "base64"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "target",
+        "observed_at",
+        "evidence_ref",
+        "complete",
+        "representation",
+        "content_base64",
+        "byte_length",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "DeleteAcknowledgement": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "contracts.schema.json#/$defs/Target"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evidence_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "outcome": {
+          "const": "ACKNOWLEDGED"
+        },
+        "remote_operation_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "target",
+        "observed_at",
+        "evidence_ref",
+        "outcome",
+        "remote_operation_ref"
+      ],
+      "additionalProperties": false
+    },
+    "ExecutionReport": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "work_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "plan_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "execution_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "solution_id": {
+          "const": "SOL-JENKINS-JOB-DELETE"
+        },
+        "solution_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "target": {
+          "$ref": "contracts.schema.json#/$defs/Target"
+        },
+        "result": {
+          "enum": [
+            "SUCCESS",
+            "FAILED",
+            "UNKNOWN",
+            "REJECTED",
+            "BLOCKED_STATE_CHANGED",
+            "BLOCKED_SERVICE_UNAVAILABLE",
+            "SKIPPED_ALREADY_APPLIED"
+          ]
+        },
+        "reason_code": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "delete_dispatch_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "backup_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "backup_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verification_evidence_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "work_status": {
+          "enum": [
+            "COMPLETED",
+            "PENDING_HUMAN"
+          ]
+        },
+        "requires_human_review": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "schema_version",
+        "work_id",
+        "plan_id",
+        "execution_id",
+        "solution_id",
+        "solution_version",
+        "target",
+        "result",
+        "reason_code",
+        "delete_dispatch_count",
+        "backup_id",
+        "backup_sha256",
+        "verification_evidence_ref",
+        "work_status",
+        "requires_human_review",
+        "created_at"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "SUCCESS"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "delete_dispatch_count": {
+                "const": 1
+              },
+              "backup_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "backup_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "verification_evidence_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "work_status": {
+                "const": "COMPLETED"
+              },
+              "requires_human_review": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "UNKNOWN"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "work_status": {
+                "const": "PENDING_HUMAN"
+              },
+              "requires_human_review": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "enum": [
+                  "REJECTED",
+                  "BLOCKED_STATE_CHANGED",
+                  "BLOCKED_SERVICE_UNAVAILABLE",
+                  "SKIPPED_ALREADY_APPLIED"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "delete_dispatch_count": {
+                "const": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "IntentCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intent",
+        "candidate_solution_id",
+        "candidate_solution_version",
+        "target_hints",
+        "clarification_fields",
+        "explanation"
+      ],
+      "properties": {
+        "intent": {
+          "enum": [
+            "DELETE_JENKINS_JOB",
+            "QUERY_JENKINS_JOB",
+            "NEEDS_INPUT",
+            "UNSUPPORTED"
+          ]
+        },
+        "candidate_solution_id": {
+          "enum": [
+            "SOL-JENKINS-JOB-DELETE",
+            null
+          ]
+        },
+        "candidate_solution_version": {
+          "enum": [
+            "1.0.0",
+            null
+          ]
+        },
+        "target_hints": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "controller_hint",
+            "job_full_name_hint"
+          ],
+          "properties": {
+            "controller_hint": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "job_full_name_hint": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "clarification_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "controller",
+              "job_full_name"
+            ]
+          }
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "intent": {
+                "const": "DELETE_JENKINS_JOB"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "candidate_solution_id": {
+                "const": "SOL-JENKINS-JOB-DELETE"
+              },
+              "candidate_solution_version": {
+                "const": "1.0.0"
+              },
+              "target_hints": {
+                "properties": {
+                  "controller_hint": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "job_full_name_hint": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "clarification_fields": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "intent": {
+                "const": "NEEDS_INPUT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "clarification_fields": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

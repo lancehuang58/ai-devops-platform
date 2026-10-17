@@ -1,0 +1,641 @@
+[
+  {
+    "name": "change-mode",
+    "schema": "query-solution.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "solution_id": "SOL-JENKINS-JOB-EXPLAIN",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "execution_mode": "FIXED_CHANGE",
+      "allowed_roles": [
+        "ADMIN",
+        "NORMAL_USER"
+      ],
+      "view": "COMMON_QUERY_SAFE",
+      "primary_target_types": [
+        "FREESTYLE",
+        "PIPELINE"
+      ],
+      "exclude_multibranch_primary": true,
+      "requires_idle": false,
+      "requires_admin_confirmation": false,
+      "entry_commands": [
+        {
+          "command_id": "JOB_METADATA_READ",
+          "version": "1.0.0"
+        },
+        {
+          "command_id": "JOB_CONFIG_READ_SAFE",
+          "version": "1.0.0"
+        }
+      ],
+      "capability_policy": {
+        "command_type": "QUERY",
+        "transport": "MCP",
+        "require_published": true,
+        "require_read_only_proof": true,
+        "require_resolved_related_target": true,
+        "require_common_safe_projection": true,
+        "forbid_secret_and_conversation_tools": true,
+        "tool_annotations_are_not_authorization": true
+      },
+      "budgets": {
+        "max_tool_calls": 20,
+        "max_model_calls": 10,
+        "workflow_timeout_seconds": 180,
+        "max_total_raw_bytes": 20971520,
+        "max_config_bytes": 10485760,
+        "max_other_response_bytes": 1048576
+      },
+      "stop_policy": {
+        "technical_retry_count": 0,
+        "fallback_allowed": false,
+        "auto_resume": false,
+        "stop_all_after_technical_fault": true,
+        "allow_semantic_followup_after_valid_response": true
+      }
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "requires-idle",
+    "schema": "query-solution.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "solution_id": "SOL-JENKINS-JOB-EXPLAIN",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "execution_mode": "ADAPTIVE_READ",
+      "allowed_roles": [
+        "ADMIN",
+        "NORMAL_USER"
+      ],
+      "view": "COMMON_QUERY_SAFE",
+      "primary_target_types": [
+        "FREESTYLE",
+        "PIPELINE"
+      ],
+      "exclude_multibranch_primary": true,
+      "requires_idle": true,
+      "requires_admin_confirmation": false,
+      "entry_commands": [
+        {
+          "command_id": "JOB_METADATA_READ",
+          "version": "1.0.0"
+        },
+        {
+          "command_id": "JOB_CONFIG_READ_SAFE",
+          "version": "1.0.0"
+        }
+      ],
+      "capability_policy": {
+        "command_type": "QUERY",
+        "transport": "MCP",
+        "require_published": true,
+        "require_read_only_proof": true,
+        "require_resolved_related_target": true,
+        "require_common_safe_projection": true,
+        "forbid_secret_and_conversation_tools": true,
+        "tool_annotations_are_not_authorization": true
+      },
+      "budgets": {
+        "max_tool_calls": 20,
+        "max_model_calls": 10,
+        "workflow_timeout_seconds": 180,
+        "max_total_raw_bytes": 20971520,
+        "max_config_bytes": 10485760,
+        "max_other_response_bytes": 1048576
+      },
+      "stop_policy": {
+        "technical_retry_count": 0,
+        "fallback_allowed": false,
+        "auto_resume": false,
+        "stop_all_after_technical_fault": true,
+        "allow_semantic_followup_after_valid_response": true
+      }
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "admin-only-query",
+    "schema": "query-solution.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "solution_id": "SOL-JENKINS-JOB-EXPLAIN",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "execution_mode": "ADAPTIVE_READ",
+      "allowed_roles": [
+        "ADMIN"
+      ],
+      "view": "COMMON_QUERY_SAFE",
+      "primary_target_types": [
+        "FREESTYLE",
+        "PIPELINE"
+      ],
+      "exclude_multibranch_primary": true,
+      "requires_idle": false,
+      "requires_admin_confirmation": false,
+      "entry_commands": [
+        {
+          "command_id": "JOB_METADATA_READ",
+          "version": "1.0.0"
+        },
+        {
+          "command_id": "JOB_CONFIG_READ_SAFE",
+          "version": "1.0.0"
+        }
+      ],
+      "capability_policy": {
+        "command_type": "QUERY",
+        "transport": "MCP",
+        "require_published": true,
+        "require_read_only_proof": true,
+        "require_resolved_related_target": true,
+        "require_common_safe_projection": true,
+        "forbid_secret_and_conversation_tools": true,
+        "tool_annotations_are_not_authorization": true
+      },
+      "budgets": {
+        "max_tool_calls": 20,
+        "max_model_calls": 10,
+        "workflow_timeout_seconds": 180,
+        "max_total_raw_bytes": 20971520,
+        "max_config_bytes": 10485760,
+        "max_other_response_bytes": 1048576
+      },
+      "stop_policy": {
+        "technical_retry_count": 0,
+        "fallback_allowed": false,
+        "auto_resume": false,
+        "stop_all_after_technical_fault": true,
+        "allow_semantic_followup_after_valid_response": true
+      }
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "fallback-enabled",
+    "schema": "query-solution.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "solution_id": "SOL-JENKINS-JOB-EXPLAIN",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "execution_mode": "ADAPTIVE_READ",
+      "allowed_roles": [
+        "ADMIN",
+        "NORMAL_USER"
+      ],
+      "view": "COMMON_QUERY_SAFE",
+      "primary_target_types": [
+        "FREESTYLE",
+        "PIPELINE"
+      ],
+      "exclude_multibranch_primary": true,
+      "requires_idle": false,
+      "requires_admin_confirmation": false,
+      "entry_commands": [
+        {
+          "command_id": "JOB_METADATA_READ",
+          "version": "1.0.0"
+        },
+        {
+          "command_id": "JOB_CONFIG_READ_SAFE",
+          "version": "1.0.0"
+        }
+      ],
+      "capability_policy": {
+        "command_type": "QUERY",
+        "transport": "MCP",
+        "require_published": true,
+        "require_read_only_proof": true,
+        "require_resolved_related_target": true,
+        "require_common_safe_projection": true,
+        "forbid_secret_and_conversation_tools": true,
+        "tool_annotations_are_not_authorization": true
+      },
+      "budgets": {
+        "max_tool_calls": 20,
+        "max_model_calls": 10,
+        "workflow_timeout_seconds": 180,
+        "max_total_raw_bytes": 20971520,
+        "max_config_bytes": 10485760,
+        "max_other_response_bytes": 1048576
+      },
+      "stop_policy": {
+        "technical_retry_count": 0,
+        "fallback_allowed": true,
+        "auto_resume": false,
+        "stop_all_after_technical_fault": true,
+        "allow_semantic_followup_after_valid_response": true
+      }
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "zero-budget",
+    "schema": "query-solution.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "solution_id": "SOL-JENKINS-JOB-EXPLAIN",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "execution_mode": "ADAPTIVE_READ",
+      "allowed_roles": [
+        "ADMIN",
+        "NORMAL_USER"
+      ],
+      "view": "COMMON_QUERY_SAFE",
+      "primary_target_types": [
+        "FREESTYLE",
+        "PIPELINE"
+      ],
+      "exclude_multibranch_primary": true,
+      "requires_idle": false,
+      "requires_admin_confirmation": false,
+      "entry_commands": [
+        {
+          "command_id": "JOB_METADATA_READ",
+          "version": "1.0.0"
+        },
+        {
+          "command_id": "JOB_CONFIG_READ_SAFE",
+          "version": "1.0.0"
+        }
+      ],
+      "capability_policy": {
+        "command_type": "QUERY",
+        "transport": "MCP",
+        "require_published": true,
+        "require_read_only_proof": true,
+        "require_resolved_related_target": true,
+        "require_common_safe_projection": true,
+        "forbid_secret_and_conversation_tools": true,
+        "tool_annotations_are_not_authorization": true
+      },
+      "budgets": {
+        "max_tool_calls": 0,
+        "max_model_calls": 10,
+        "workflow_timeout_seconds": 180,
+        "max_total_raw_bytes": 20971520,
+        "max_config_bytes": 10485760,
+        "max_other_response_bytes": 1048576
+      },
+      "stop_policy": {
+        "technical_retry_count": 0,
+        "fallback_allowed": false,
+        "auto_resume": false,
+        "stop_all_after_technical_fault": true,
+        "allow_semantic_followup_after_valid_response": true
+      }
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "change-command",
+    "schema": "query-command.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "command_id": "JOB_METADATA_READ",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "capability_id": "jenkins.job.metadata.read",
+      "command_type": "CHANGE",
+      "transport": "MCP",
+      "read_only": true,
+      "external_business_side_effects": false,
+      "allowed_roles": [
+        "ADMIN",
+        "NORMAL_USER"
+      ],
+      "view": "COMMON_QUERY_SAFE",
+      "input_schema_ref": "query-contracts.schema.json#/$defs/JOB_METADATA_READInput",
+      "output_schema_ref": "query-contracts.schema.json#/$defs/SafeEvidence",
+      "binding_ref": null,
+      "read_only_proof_ref": null,
+      "parser_ref": null,
+      "sensitivity_policy_ref": "SENSITIVE-DATA-V2",
+      "timeout_seconds": 15,
+      "retry_count": 0,
+      "fallback_allowed": false
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "side-effects",
+    "schema": "query-command.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "command_id": "JOB_METADATA_READ",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "capability_id": "jenkins.job.metadata.read",
+      "command_type": "QUERY",
+      "transport": "MCP",
+      "read_only": true,
+      "external_business_side_effects": true,
+      "allowed_roles": [
+        "ADMIN",
+        "NORMAL_USER"
+      ],
+      "view": "COMMON_QUERY_SAFE",
+      "input_schema_ref": "query-contracts.schema.json#/$defs/JOB_METADATA_READInput",
+      "output_schema_ref": "query-contracts.schema.json#/$defs/SafeEvidence",
+      "binding_ref": null,
+      "read_only_proof_ref": null,
+      "parser_ref": null,
+      "sensitivity_policy_ref": "SENSITIVE-DATA-V2",
+      "timeout_seconds": 15,
+      "retry_count": 0,
+      "fallback_allowed": false
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "published-without-binding",
+    "schema": "query-command.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "command_id": "JOB_METADATA_READ",
+      "version": "1.0.0",
+      "status": "PUBLISHED",
+      "capability_id": "jenkins.job.metadata.read",
+      "command_type": "QUERY",
+      "transport": "MCP",
+      "read_only": true,
+      "external_business_side_effects": false,
+      "allowed_roles": [
+        "ADMIN",
+        "NORMAL_USER"
+      ],
+      "view": "COMMON_QUERY_SAFE",
+      "input_schema_ref": "query-contracts.schema.json#/$defs/JOB_METADATA_READInput",
+      "output_schema_ref": "query-contracts.schema.json#/$defs/SafeEvidence",
+      "binding_ref": null,
+      "read_only_proof_ref": null,
+      "parser_ref": null,
+      "sensitivity_policy_ref": "SENSITIVE-DATA-V2",
+      "timeout_seconds": 15,
+      "retry_count": 0,
+      "fallback_allowed": false
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "retry",
+    "schema": "query-command.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "command_id": "JOB_METADATA_READ",
+      "version": "1.0.0",
+      "status": "DRAFT",
+      "capability_id": "jenkins.job.metadata.read",
+      "command_type": "QUERY",
+      "transport": "MCP",
+      "read_only": true,
+      "external_business_side_effects": false,
+      "allowed_roles": [
+        "ADMIN",
+        "NORMAL_USER"
+      ],
+      "view": "COMMON_QUERY_SAFE",
+      "input_schema_ref": "query-contracts.schema.json#/$defs/JOB_METADATA_READInput",
+      "output_schema_ref": "query-contracts.schema.json#/$defs/SafeEvidence",
+      "binding_ref": null,
+      "read_only_proof_ref": null,
+      "parser_ref": null,
+      "sensitivity_policy_ref": "SENSITIVE-DATA-V2",
+      "timeout_seconds": 15,
+      "retry_count": 1,
+      "fallback_allowed": false
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "model-self-authorize",
+    "schema": "read-decision.schema.json",
+    "input": {
+      "decision": "READ",
+      "command_id": "SCM_FILE_READ",
+      "command_version": "1.0.0",
+      "knowledge_gap": "config 只指出 SCM，尚未取得 Pipeline 內容",
+      "reason": "說明此 Job 的部署步驟需讀取設定引用的 Jenkinsfile",
+      "relation_ref": "REL-CONFIG-SCM-001",
+      "basis_evidence_refs": [
+        "EV-CONFIG-001",
+        "EV-REF-001"
+      ],
+      "input": {
+        "target_ref": "T-SCM-001",
+        "selector": {
+          "repository_ref": "REPO-001",
+          "revision": "fixture-commit-c1",
+          "path": "ci/Jenkinsfile",
+          "limit_bytes": 65536
+        }
+      },
+      "authorized": true
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "arbitrary-shell",
+    "schema": "read-decision.schema.json",
+    "input": {
+      "decision": "READ",
+      "command_id": "SCM_FILE_READ",
+      "command_version": "1.0.0",
+      "knowledge_gap": "config 只指出 SCM，尚未取得 Pipeline 內容",
+      "reason": "說明此 Job 的部署步驟需讀取設定引用的 Jenkinsfile",
+      "relation_ref": "REL-CONFIG-SCM-001",
+      "basis_evidence_refs": [
+        "EV-CONFIG-001",
+        "EV-REF-001"
+      ],
+      "input": {
+        "target_ref": "T-SCM-001",
+        "selector": {
+          "repository_ref": "REPO-001",
+          "revision": "fixture-commit-c1",
+          "path": "ci/Jenkinsfile",
+          "limit_bytes": 65536,
+          "shell": "execute arbitrary script"
+        }
+      }
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "missing-relation",
+    "schema": "read-decision.schema.json",
+    "input": {
+      "decision": "READ",
+      "command_id": "SCM_FILE_READ",
+      "command_version": "1.0.0",
+      "knowledge_gap": "config 只指出 SCM，尚未取得 Pipeline 內容",
+      "reason": "說明此 Job 的部署步驟需讀取設定引用的 Jenkinsfile",
+      "basis_evidence_refs": [
+        "EV-CONFIG-001",
+        "EV-REF-001"
+      ],
+      "input": {
+        "target_ref": "T-SCM-001",
+        "selector": {
+          "repository_ref": "REPO-001",
+          "revision": "fixture-commit-c1",
+          "path": "ci/Jenkinsfile",
+          "limit_bytes": 65536
+        }
+      }
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "no-basis",
+    "schema": "read-decision.schema.json",
+    "input": {
+      "decision": "READ",
+      "command_id": "SCM_FILE_READ",
+      "command_version": "1.0.0",
+      "knowledge_gap": "config 只指出 SCM，尚未取得 Pipeline 內容",
+      "reason": "說明此 Job 的部署步驟需讀取設定引用的 Jenkinsfile",
+      "relation_ref": "REL-CONFIG-SCM-001",
+      "basis_evidence_refs": [],
+      "input": {
+        "target_ref": "T-SCM-001",
+        "selector": {
+          "repository_ref": "REPO-001",
+          "revision": "fixture-commit-c1",
+          "path": "ci/Jenkinsfile",
+          "limit_bytes": 65536
+        }
+      }
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "no-citation",
+    "schema": "query-answer.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "work_id": "REQ-JQ-001",
+      "answer_status": "COMPLETE",
+      "summary": "此 Job 的設定包含建置、測試及部署步驟。這是設定說明，未宣稱某次部署已成功。",
+      "claims": [
+        {
+          "text": "Jenkinsfile 定義了建置、測試與部署階段。",
+          "kind": "FACT",
+          "evidence_refs": []
+        }
+      ],
+      "unresolved_items": [],
+      "evidence_refs": [
+        "EV-CONFIG-001",
+        "EV-REF-001",
+        "EV-FILE-001"
+      ],
+      "retrieved_at": "2026-09-29T05:20:00Z",
+      "policy_version": "SENSITIVE-DATA-V2",
+      "tool_call_count": 4,
+      "model_call_count": 2
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "complete-with-gap",
+    "schema": "query-answer.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "work_id": "REQ-JQ-001",
+      "answer_status": "COMPLETE",
+      "summary": "此 Job 的設定包含建置、測試及部署步驟。這是設定說明，未宣稱某次部署已成功。",
+      "claims": [
+        {
+          "text": "Jenkinsfile 定義了建置、測試與部署階段。",
+          "kind": "FACT",
+          "evidence_refs": [
+            "EV-FILE-001"
+          ]
+        }
+      ],
+      "unresolved_items": [
+        {
+          "topic": "部署",
+          "reason_code": "INSUFFICIENT_EVIDENCE"
+        }
+      ],
+      "evidence_refs": [
+        "EV-CONFIG-001",
+        "EV-REF-001",
+        "EV-FILE-001"
+      ],
+      "retrieved_at": "2026-09-29T05:20:00Z",
+      "policy_version": "SENSITIVE-DATA-V2",
+      "tool_call_count": 4,
+      "model_call_count": 2
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "invalid-time",
+    "schema": "query-answer.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "work_id": "REQ-JQ-001",
+      "answer_status": "COMPLETE",
+      "summary": "此 Job 的設定包含建置、測試及部署步驟。這是設定說明，未宣稱某次部署已成功。",
+      "claims": [
+        {
+          "text": "Jenkinsfile 定義了建置、測試與部署階段。",
+          "kind": "FACT",
+          "evidence_refs": [
+            "EV-FILE-001"
+          ]
+        }
+      ],
+      "unresolved_items": [],
+      "evidence_refs": [
+        "EV-CONFIG-001",
+        "EV-REF-001",
+        "EV-FILE-001"
+      ],
+      "retrieved_at": "today",
+      "policy_version": "SENSITIVE-DATA-V2",
+      "tool_call_count": 4,
+      "model_call_count": 2
+    },
+    "expected_schema_valid": false
+  },
+  {
+    "name": "partial-without-gap",
+    "schema": "query-answer.schema.json",
+    "input": {
+      "schema_version": "1.0.0",
+      "work_id": "REQ-JQ-001",
+      "answer_status": "PARTIAL",
+      "summary": "此 Job 的設定包含建置、測試及部署步驟。這是設定說明，未宣稱某次部署已成功。",
+      "claims": [
+        {
+          "text": "Jenkinsfile 定義了建置、測試與部署階段。",
+          "kind": "FACT",
+          "evidence_refs": [
+            "EV-FILE-001"
+          ]
+        }
+      ],
+      "unresolved_items": [],
+      "evidence_refs": [
+        "EV-CONFIG-001",
+        "EV-REF-001",
+        "EV-FILE-001"
+      ],
+      "retrieved_at": "2026-09-29T05:20:00Z",
+      "policy_version": "SENSITIVE-DATA-V2",
+      "tool_call_count": 4,
+      "model_call_count": 2
+    },
+    "expected_schema_valid": false
+  }
+]

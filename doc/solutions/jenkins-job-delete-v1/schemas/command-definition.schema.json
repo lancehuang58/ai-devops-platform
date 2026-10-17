@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/devops/jenkins-job-delete/v1/command-definition.schema.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "command_id": {
+      "enum": [
+        "CMD-JENKINS-JOB-INSPECT",
+        "CMD-JENKINS-JOB-CONFIG-READ",
+        "CMD-JENKINS-JOB-DELETE",
+        "CMD-JENKINS-JOB-VERIFY-ABSENT"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "TESTED",
+        "PUBLISHED",
+        "DISABLED"
+      ]
+    },
+    "command_type": {
+      "enum": [
+        "QUERY",
+        "CHANGE",
+        "VERIFY"
+      ]
+    },
+    "capability_id": {
+      "enum": [
+        "jenkins.job.inspect",
+        "jenkins.job.config.read",
+        "jenkins.job.delete"
+      ]
+    },
+    "transport": {
+      "const": "MCP"
+    },
+    "allowed_roles": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "ADMIN",
+          "NORMAL_USER"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "input_contract": {
+      "const": "contracts.schema.json#/$defs/Target"
+    },
+    "output_contract": {
+      "enum": [
+        "contracts.schema.json#/$defs/InspectResult",
+        "contracts.schema.json#/$defs/ConfigResult",
+        "contracts.schema.json#/$defs/DeleteAcknowledgement"
+      ]
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 30
+    },
+    "max_attempts": {
+      "const": 1
+    },
+    "retry_count": {
+      "const": 0
+    },
+    "fallback_allowed": {
+      "const": false
+    },
+    "output_visibility": {
+      "const": "ADMIN_RAW_NORMAL_MASKED"
+    },
+    "required_guards": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "CURRENT_ROLE",
+          "PUBLISHED_VERSIONS",
+          "RESOURCE_MAPPING_VERSION",
+          "FRESH_CORE_AND_DEPENDENCY_HEALTH",
+          "NO_EXECUTION_HOLD",
+          "VALID_OWNER",
+          "PLAN_STEP_ALLOWED",
+          "UNIQUE_DISPATCH_PERMIT",
+          "ADMIN_PLAN_CONFIRMATION",
+          "VERIFIED_BACKUP",
+          "FINAL_PRECHECKS_MATCH"
+        ]
+      },
+      "minItems": 8,
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "schema_version",
+    "command_id",
+    "version",
+    "status",
+    "command_type",
+    "capability_id",
+    "transport",
+    "allowed_roles",
+    "input_contract",
+    "output_contract",
+    "timeout_seconds",
+    "max_attempts",
+    "retry_count",
+    "fallback_allowed",
+    "output_visibility",
+    "required_guards"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "command_id": {
+            "const": "CMD-JENKINS-JOB-INSPECT"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "command_type": {
+            "const": "QUERY"
+          },
+          "capability_id": {
+            "const": "jenkins.job.inspect"
+          },
+          "output_contract": {
+            "const": "contracts.schema.json#/$defs/InspectResult"
+          },
+          "timeout_seconds": {
+            "const": 15
+          },
+          "allowed_roles": {
+            "const": [
+              "ADMIN",
+              "NORMAL_USER"
+            ]
+          },
+          "required_guards": {
+            "const": [
+              "CURRENT_ROLE",
+              "PUBLISHED_VERSIONS",
+              "RESOURCE_MAPPING_VERSION",
+              "FRESH_CORE_AND_DEPENDENCY_HEALTH",
+              "NO_EXECUTION_HOLD",
+              "VALID_OWNER",
+              "PLAN_STEP_ALLOWED",
+              "UNIQUE_DISPATCH_PERMIT"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command_id": {
+            "const": "CMD-JENKINS-JOB-CONFIG-READ"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "command_type": {
+            "const": "QUERY"
+          },
+          "capability_id": {
+            "const": "jenkins.job.config.read"
+          },
+          "output_contract": {
+            "const": "contracts.schema.json#/$defs/ConfigResult"
+          },
+          "timeout_seconds": {
+            "const": 15
+          },
+          "allowed_roles": {
+            "const": [
+              "ADMIN"
+            ]
+          },
+          "required_guards": {
+            "const": [
+              "CURRENT_ROLE",
+              "PUBLISHED_VERSIONS",
+              "RESOURCE_MAPPING_VERSION",
+              "FRESH_CORE_AND_DEPENDENCY_HEALTH",
+              "NO_EXECUTION_HOLD",
+              "VALID_OWNER",
+              "PLAN_STEP_ALLOWED",
+              "UNIQUE_DISPATCH_PERMIT"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command_id": {
+            "const": "CMD-JENKINS-JOB-DELETE"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "command_type": {
+            "const": "CHANGE"
+          },
+          "capability_id": {
+            "const": "jenkins.job.delete"
+          },
+          "output_contract": {
+            "const": "contracts.schema.json#/$defs/DeleteAcknowledgement"
+          },
+          "timeout_seconds": {
+            "const": 30
+          },
+          "allowed_roles": {
+            "const": [
+              "ADMIN"
+            ]
+          },
+          "required_guards": {
+            "const": [
+              "CURRENT_ROLE",
+              "PUBLISHED_VERSIONS",
+              "RESOURCE_MAPPING_VERSION",
+              "FRESH_CORE_AND_DEPENDENCY_HEALTH",
+              "NO_EXECUTION_HOLD",
+              "VALID_OWNER",
+              "PLAN_STEP_ALLOWED",
+              "UNIQUE_DISPATCH_PERMIT",
+              "ADMIN_PLAN_CONFIRMATION",
+              "VERIFIED_BACKUP",
+              "FINAL_PRECHECKS_MATCH"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command_id": {
+            "const": "CMD-JENKINS-JOB-VERIFY-ABSENT"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "command_type": {
+            "const": "VERIFY"
+          },
+          "capability_id": {
+            "const": "jenkins.job.inspect"
+          },
+          "output_contract": {
+            "const": "contracts.schema.json#/$defs/InspectResult"
+          },
+          "timeout_seconds": {
+            "const": 10
+          },
+          "allowed_roles": {
+            "const": [
+              "ADMIN"
+            ]
+          },
+          "required_guards": {
+            "const": [
+              "CURRENT_ROLE",
+              "PUBLISHED_VERSIONS",
+              "RESOURCE_MAPPING_VERSION",
+              "FRESH_CORE_AND_DEPENDENCY_HEALTH",
+              "NO_EXECUTION_HOLD",
+              "VALID_OWNER",
+              "PLAN_STEP_ALLOWED",
+              "UNIQUE_DISPATCH_PERMIT"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

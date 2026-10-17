@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0.0",
+  "solution_id": "SOL-JENKINS-JOB-EXPLAIN",
+  "version": "1.0.0",
+  "status": "DRAFT",
+  "execution_mode": "ADAPTIVE_READ",
+  "allowed_roles": [
+    "ADMIN",
+    "NORMAL_USER"
+  ],
+  "view": "COMMON_QUERY_SAFE",
+  "primary_target_types": [
+    "FREESTYLE",
+    "PIPELINE"
+  ],
+  "exclude_multibranch_primary": true,
+  "requires_idle": false,
+  "requires_admin_confirmation": false,
+  "entry_commands": [
+    {
+      "command_id": "JOB_METADATA_READ",
+      "version": "1.0.0"
+    },
+    {
+      "command_id": "JOB_CONFIG_READ_SAFE",
+      "version": "1.0.0"
+    }
+  ],
+  "capability_policy": {
+    "command_type": "QUERY",
+    "transport": "MCP",
+    "require_published": true,
+    "require_read_only_proof": true,
+    "require_resolved_related_target": true,
+    "require_common_safe_projection": true,
+    "forbid_secret_and_conversation_tools": true,
+    "tool_annotations_are_not_authorization": true
+  },
+  "budgets": {
+    "max_tool_calls": 20,
+    "max_model_calls": 10,
+    "workflow_timeout_seconds": 180,
+    "max_total_raw_bytes": 20971520,
+    "max_config_bytes": 10485760,
+    "max_other_response_bytes": 1048576
+  },
+  "stop_policy": {
+    "technical_retry_count": 0,
+    "fallback_allowed": false,
+    "auto_resume": false,
+    "stop_all_after_technical_fault": true,
+    "allow_semantic_followup_after_valid_response": true
+  }
+}

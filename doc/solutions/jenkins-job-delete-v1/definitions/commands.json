@@ -1,0 +1,122 @@
+[
+  {
+    "schema_version": "1.0.0",
+    "command_id": "CMD-JENKINS-JOB-INSPECT",
+    "version": "1.0.0",
+    "status": "DRAFT",
+    "transport": "MCP",
+    "input_contract": "contracts.schema.json#/$defs/Target",
+    "max_attempts": 1,
+    "retry_count": 0,
+    "fallback_allowed": false,
+    "output_visibility": "ADMIN_RAW_NORMAL_MASKED",
+    "command_type": "QUERY",
+    "capability_id": "jenkins.job.inspect",
+    "output_contract": "contracts.schema.json#/$defs/InspectResult",
+    "timeout_seconds": 15,
+    "allowed_roles": [
+      "ADMIN",
+      "NORMAL_USER"
+    ],
+    "required_guards": [
+      "CURRENT_ROLE",
+      "PUBLISHED_VERSIONS",
+      "RESOURCE_MAPPING_VERSION",
+      "FRESH_CORE_AND_DEPENDENCY_HEALTH",
+      "NO_EXECUTION_HOLD",
+      "VALID_OWNER",
+      "PLAN_STEP_ALLOWED",
+      "UNIQUE_DISPATCH_PERMIT"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+    "version": "1.0.0",
+    "status": "DRAFT",
+    "transport": "MCP",
+    "input_contract": "contracts.schema.json#/$defs/Target",
+    "max_attempts": 1,
+    "retry_count": 0,
+    "fallback_allowed": false,
+    "output_visibility": "ADMIN_RAW_NORMAL_MASKED",
+    "command_type": "QUERY",
+    "capability_id": "jenkins.job.config.read",
+    "output_contract": "contracts.schema.json#/$defs/ConfigResult",
+    "timeout_seconds": 15,
+    "allowed_roles": [
+      "ADMIN"
+    ],
+    "required_guards": [
+      "CURRENT_ROLE",
+      "PUBLISHED_VERSIONS",
+      "RESOURCE_MAPPING_VERSION",
+      "FRESH_CORE_AND_DEPENDENCY_HEALTH",
+      "NO_EXECUTION_HOLD",
+      "VALID_OWNER",
+      "PLAN_STEP_ALLOWED",
+      "UNIQUE_DISPATCH_PERMIT"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "command_id": "CMD-JENKINS-JOB-DELETE",
+    "version": "1.0.0",
+    "status": "DRAFT",
+    "transport": "MCP",
+    "input_contract": "contracts.schema.json#/$defs/Target",
+    "max_attempts": 1,
+    "retry_count": 0,
+    "fallback_allowed": false,
+    "output_visibility": "ADMIN_RAW_NORMAL_MASKED",
+    "command_type": "CHANGE",
+    "capability_id": "jenkins.job.delete",
+    "output_contract": "contracts.schema.json#/$defs/DeleteAcknowledgement",
+    "timeout_seconds": 30,
+    "allowed_roles": [
+      "ADMIN"
+    ],
+    "required_guards": [
+      "CURRENT_ROLE",
+      "PUBLISHED_VERSIONS",
+      "RESOURCE_MAPPING_VERSION",
+      "FRESH_CORE_AND_DEPENDENCY_HEALTH",
+      "NO_EXECUTION_HOLD",
+      "VALID_OWNER",
+      "PLAN_STEP_ALLOWED",
+      "UNIQUE_DISPATCH_PERMIT",
+      "ADMIN_PLAN_CONFIRMATION",
+      "VERIFIED_BACKUP",
+      "FINAL_PRECHECKS_MATCH"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "command_id": "CMD-JENKINS-JOB-VERIFY-ABSENT",
+    "version": "1.0.0",
+    "status": "DRAFT",
+    "transport": "MCP",
+    "input_contract": "contracts.schema.json#/$defs/Target",
+    "max_attempts": 1,
+    "retry_count": 0,
+    "fallback_allowed": false,
+    "output_visibility": "ADMIN_RAW_NORMAL_MASKED",
+    "command_type": "VERIFY",
+    "capability_id": "jenkins.job.inspect",
+    "output_contract": "contracts.schema.json#/$defs/InspectResult",
+    "timeout_seconds": 10,
+    "allowed_roles": [
+      "ADMIN"
+    ],
+    "required_guards": [
+      "CURRENT_ROLE",
+      "PUBLISHED_VERSIONS",
+      "RESOURCE_MAPPING_VERSION",
+      "FRESH_CORE_AND_DEPENDENCY_HEALTH",
+      "NO_EXECUTION_HOLD",
+      "VALID_OWNER",
+      "PLAN_STEP_ALLOWED",
+      "UNIQUE_DISPATCH_PERMIT"
+    ]
+  }
+]

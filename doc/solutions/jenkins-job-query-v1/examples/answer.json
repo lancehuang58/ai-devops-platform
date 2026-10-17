@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "work_id": "REQ-JQ-001",
+  "answer_status": "COMPLETE",
+  "summary": "此 Job 的設定包含建置、測試及部署步驟。這是設定說明，未宣稱某次部署已成功。",
+  "claims": [
+    {
+      "text": "Jenkinsfile 定義了建置、測試與部署階段。",
+      "kind": "FACT",
+      "evidence_refs": [
+        "EV-FILE-001"
+      ]
+    }
+  ],
+  "unresolved_items": [],
+  "evidence_refs": [
+    "EV-CONFIG-001",
+    "EV-REF-001",
+    "EV-FILE-001"
+  ],
+  "retrieved_at": "2026-09-29T05:20:00Z",
+  "policy_version": "SENSITIVE-DATA-V2",
+  "tool_call_count": 4,
+  "model_call_count": 2
+}

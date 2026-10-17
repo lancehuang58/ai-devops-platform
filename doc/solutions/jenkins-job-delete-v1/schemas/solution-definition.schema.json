@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/devops/jenkins-job-delete/v1/solution-definition.schema.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "solution_id": {
+      "const": "SOL-JENKINS-JOB-DELETE"
+    },
+    "request_type": {
+      "const": "MAINTENANCE_REQUEST"
+    },
+    "intent": {
+      "const": "DELETE_JENKINS_JOB"
+    },
+    "workflow_profile": {
+      "const": "JENKINS_JOB_DELETE_V1"
+    },
+    "input_contract": {
+      "const": "contracts.schema.json#/$defs/Target"
+    },
+    "max_targets": {
+      "const": 1
+    },
+    "allowed_job_kinds": {
+      "const": [
+        "FREESTYLE",
+        "PIPELINE"
+      ]
+    },
+    "exclude_multibranch_branch": {
+      "const": true
+    },
+    "transport": {
+      "const": "MCP"
+    },
+    "authorization": {
+      "const": {
+        "required_role": "ADMIN",
+        "confirmation_mode": "WHOLE_PLAN_ONCE",
+        "after_step_id": "S10",
+        "expires_after_seconds": 300,
+        "recheck_before_each_step": true
+      }
+    },
+    "execution_policy": {
+      "const": {
+        "retry_count": 0,
+        "fallback_allowed": false,
+        "auto_resume": false,
+        "auto_rollback": false,
+        "verify_after_fault": false,
+        "max_delete_dispatches": 1,
+        "max_verify_probes": 1,
+        "max_external_calls": 6,
+        "workflow_timeout_seconds": 180,
+        "observation_max_age_seconds": 30,
+        "final_config_max_age_seconds": 30,
+        "max_config_bytes": 10485760,
+        "report_mode": "FIXED_TEMPLATE",
+        "lock_scope": "CONTROLLER_AND_FULL_JOB_NAME",
+        "verification_timeout_seconds": 45,
+        "settle_delay_seconds": 0,
+        "poll_interval_seconds": null,
+        "required_success_count": 1,
+        "observation_duration_seconds": 0
+      }
+    },
+    "steps": {
+      "const": [
+        {
+          "step_id": "S10",
+          "kind": "COMMAND",
+          "phase": "PREPARE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "INITIAL_JOB_GATE"
+        },
+        {
+          "step_id": "S20",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "COMPLETE_CONFIG_GATE"
+        },
+        {
+          "step_id": "S30",
+          "kind": "INTERNAL",
+          "phase": "EXECUTE",
+          "handler": "BACKUP_COMMIT_AND_READBACK",
+          "input_bindings": {
+            "config": "steps.S20.output"
+          },
+          "result_gate": "BACKUP_VERIFIED_GATE"
+        },
+        {
+          "step_id": "S40",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-CONFIG-READ",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "CONFIG_EQUALS_BACKUP_GATE"
+        },
+        {
+          "step_id": "S50",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-INSPECT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "FINAL_JOB_GATE"
+        },
+        {
+          "step_id": "S60",
+          "kind": "COMMAND",
+          "phase": "EXECUTE",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-DELETE",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "DELETE_ACK_GATE"
+        },
+        {
+          "step_id": "S70",
+          "kind": "COMMAND",
+          "phase": "VERIFY",
+          "command_ref": {
+            "command_id": "CMD-JENKINS-JOB-VERIFY-ABSENT",
+            "version": "1.0.0"
+          },
+          "input_bindings": {
+            "target": "plan.target"
+          },
+          "result_gate": "AUTHORITATIVE_ABSENCE_GATE"
+        }
+      ]
+    },
+    "final_report_contract": {
+      "const": "contracts.schema.json#/$defs/ExecutionReport"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "TESTED",
+        "PUBLISHED",
+        "DISABLED"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "backup_policy": {
+      "type": "object",
+      "properties": {
+        "storage": {
+          "const": "BOT_DATABASE"
+        },
+        "content": {
+          "const": "CONFIG_XML_ONLY"
+        },
+        "verify": {
+          "const": "COMMIT_READBACK_SHA256_AND_LENGTH"
+        },
+        "retention_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "protect_unknown_or_pending_human": {
+          "const": true
+        },
+        "raw_read_role": {
+          "const": "ADMIN"
+        },
+        "auto_restore": {
+          "const": false
+        }
+      },
+      "required": [
+        "storage",
+        "content",
+        "verify",
+        "retention_days",
+        "protect_unknown_or_pending_human",
+        "raw_read_role",
+        "auto_restore"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "solution_id",
+    "request_type",
+    "intent",
+    "workflow_profile",
+    "input_contract",
+    "max_targets",
+    "allowed_job_kinds",
+    "exclude_multibranch_branch",
+    "transport",
+    "authorization",
+    "execution_policy",
+    "steps",
+    "final_report_contract",
+    "name",
+    "status",
+    "version",
+    "backup_policy"
+  ],
+  "additionalProperties": false
+}

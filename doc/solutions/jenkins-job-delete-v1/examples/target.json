@@ -1,0 +1,5 @@
+{
+  "controller_resource_id": "RES-JENKINS-TEST-001",
+  "job_resource_id": "RES-JOB-DELETE-001",
+  "job_full_name": "sandbox/delete-me"
+}

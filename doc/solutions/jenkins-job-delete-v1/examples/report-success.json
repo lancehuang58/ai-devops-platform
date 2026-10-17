@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "work_id": "REQ-TEST-001",
+  "plan_id": "PLAN-TEST-001",
+  "execution_id": "EXEC-TEST-001",
+  "solution_id": "SOL-JENKINS-JOB-DELETE",
+  "solution_version": "1.0.0",
+  "target": {
+    "controller_resource_id": "RES-JENKINS-TEST-001",
+    "job_resource_id": "RES-JOB-DELETE-001",
+    "job_full_name": "sandbox/delete-me"
+  },
+  "result": "SUCCESS",
+  "reason_code": "DELETED_AND_VERIFIED_ABSENT",
+  "delete_dispatch_count": 1,
+  "backup_id": "BACKUP-TEST-001",
+  "backup_sha256": "af25c6c147f248f52f182ba2c977c5c843940bfb3d6c2b045de1ae9a9359430b",
+  "verification_evidence_ref": "EV-S70",
+  "work_status": "COMPLETED",
+  "requires_human_review": false,
+  "created_at": "2026-09-29T03:00:30Z"
+}

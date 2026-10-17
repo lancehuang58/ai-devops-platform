@@ -1,0 +1,262 @@
+{
+  "scope": "STATIC_ARTIFACT_VALIDATION_ONLY",
+  "generated_at": "2026-09-29T04:09:49.922472+00:00",
+  "jsonschema_version": "4.26.0",
+  "schema_count": 4,
+  "negative_fixture_count": 19,
+  "passed_checks": 49,
+  "failed_checks": 0,
+  "business_test_status": "NOT_RUN",
+  "qwen_contacted": false,
+  "mcp_contacted": false,
+  "jenkins_contacted": false,
+  "production_workflow_tested": false,
+  "database_transactions_tested": false,
+  "checks": [
+    {
+      "name": "schema-valid:command-definition.schema.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "schema-valid:solution-definition.schema.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "schema-valid:contracts.schema.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "schema-valid:connector-binding.schema.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:solution",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:CMD-JENKINS-JOB-INSPECT",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:CMD-JENKINS-JOB-CONFIG-READ",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:CMD-JENKINS-JOB-DELETE",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:CMD-JENKINS-JOB-VERIFY-ABSENT",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:draft-binding",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:target.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:inspect-present.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:inspect-absent.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:config-result.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:delete-ack.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:report-success.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:report-unknown.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "positive:intent-candidate.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:delete-repeat",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:fallback-enabled",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:skip-backup-step",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:swapped-steps",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:normal-authorized",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:unprotected-unknown",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:raw-script",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:delete-as-query",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:wildcard-target",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:partial-config",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:partial-inspect",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:present-null-count",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:absence-fake-count",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:untrusted-absence",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:invalid-time",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:success-without-backup",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:success-without-verify",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:unknown-completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative:model-self-authorize",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "references:step-commands",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "references:bounded-bindings",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "references:backup-source",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "policy:all-draft",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "policy:binding-disabled",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "policy:capability-coverage",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "fixture:byte-length",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "fixture:sha256",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "fixture:success-backup-hash",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "cases:unique-ids",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "cases:12-mq-32-st",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "cases:all-not-run",
+      "passed": true,
+      "detail": ""
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "intent": "DELETE_JENKINS_JOB",
+  "candidate_solution_id": "SOL-JENKINS-JOB-DELETE",
+  "candidate_solution_version": "1.0.0",
+  "target_hints": {
+    "controller_hint": "TEST Jenkins",
+    "job_full_name_hint": "sandbox/delete-me"
+  },
+  "clarification_fields": [],
+  "explanation": "使用者要求備份並刪除一個明確 Job；尚未獲得執行確認。"
+}

@@ -1,0 +1,28 @@
+{
+  "template_status": "DRAFT_NOT_DEPLOYABLE",
+  "controller": {
+    "resource_id": "RES-JENKINS-TEST-001",
+    "service_type": "JENKINS",
+    "environment": "TEST",
+    "connection_profile_id": "JENKINS-MCP-TEST",
+    "public_alias": "測試建置服務",
+    "owner_principal_id": null
+  },
+  "job": {
+    "resource_id": "RES-JOB-DELETE-001",
+    "parent_resource_id": "RES-JENKINS-TEST-001",
+    "job_full_name": "sandbox/delete-me",
+    "public_alias": "刪除測試工作",
+    "normal_query_enabled": false
+  },
+  "required_development_values": [
+    "connection_ref",
+    "credential_ref",
+    "trust_ref",
+    "actual MCP tool names and schema hashes",
+    "versioned input mappings and output parsers",
+    "owner_principal_id",
+    "verified job kind and branch classification",
+    "authoritative absence proof"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "decision": "READ",
+  "command_id": "SCM_FILE_READ",
+  "command_version": "1.0.0",
+  "knowledge_gap": "config 只指出 SCM，尚未取得 Pipeline 內容",
+  "reason": "說明此 Job 的部署步驟需讀取設定引用的 Jenkinsfile",
+  "relation_ref": "REL-CONFIG-SCM-001",
+  "basis_evidence_refs": [
+    "EV-CONFIG-001",
+    "EV-REF-001"
+  ],
+  "input": {
+    "target_ref": "T-SCM-001",
+    "selector": {
+      "repository_ref": "REPO-001",
+      "revision": "fixture-commit-c1",
+      "path": "ci/Jenkinsfile",
+      "limit_bytes": 65536
+    }
+  }
+}

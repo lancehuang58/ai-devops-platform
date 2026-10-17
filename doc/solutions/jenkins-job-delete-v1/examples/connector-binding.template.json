@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0.0",
+  "profile_id": "JENKINS-MCP-TEST",
+  "status": "DRAFT",
+  "enabled": false,
+  "transport": "MCP",
+  "connection_ref": null,
+  "credential_ref": null,
+  "trust_ref": null,
+  "adapter_version": "1.0.0",
+  "mappings": [
+    {
+      "capability_id": "jenkins.job.inspect",
+      "tool_name": null,
+      "tool_schema_sha256": null,
+      "input_mapping_ref": null,
+      "output_parser_ref": null,
+      "authoritative_absence_proof_ref": null
+    },
+    {
+      "capability_id": "jenkins.job.config.read",
+      "tool_name": null,
+      "tool_schema_sha256": null,
+      "input_mapping_ref": null,
+      "output_parser_ref": null,
+      "authoritative_absence_proof_ref": null
+    },
+    {
+      "capability_id": "jenkins.job.delete",
+      "tool_name": null,
+      "tool_schema_sha256": null,
+      "input_mapping_ref": null,
+      "output_parser_ref": null,
+      "authoritative_absence_proof_ref": null
+    }
+  ]
+}

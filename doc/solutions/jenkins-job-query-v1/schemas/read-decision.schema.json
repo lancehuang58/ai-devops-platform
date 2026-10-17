@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/devops/jenkins-job-query/v1/read-decision.schema.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "const": "READ"
+        },
+        "command_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "command_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "knowledge_gap": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relation_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "basis_evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "input": {
+          "type": "object",
+          "properties": {
+            "target_ref": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            },
+            "selector": {
+              "$ref": "query-contracts.schema.json#/$defs/Selector"
+            }
+          },
+          "required": [
+            "target_ref",
+            "selector"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "decision",
+        "command_id",
+        "command_version",
+        "knowledge_gap",
+        "reason",
+        "relation_ref",
+        "basis_evidence_refs",
+        "input"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "const": "ANSWER"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "basis_evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "decision",
+        "reason",
+        "basis_evidence_refs"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "const": "NEEDS_INPUT"
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "decision",
+        "question"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "const": "STOP"
+        },
+        "reason_code": {
+          "enum": [
+            "CAPABILITY_UNAVAILABLE",
+            "INSUFFICIENT_EVIDENCE",
+            "WITHHELD_SENSITIVE",
+            "NO_PROGRESS",
+            "BUDGET_EXHAUSTED"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "decision",
+        "reason_code",
+        "reason"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
