@@ -1,4 +1,4 @@
-package com.lancehuang.aidevopsplatform;
+package com.delta.dms.ops.aidevopsplatform;
 
 import java.net.URI;
 import java.net.http.HttpClient;

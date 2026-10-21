@@ -1,4 +1,4 @@
-package com.lancehuang.aidevopsplatform;
+package com.delta.dms.ops.aidevopsplatform;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

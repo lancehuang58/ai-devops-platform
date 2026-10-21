@@ -18,8 +18,8 @@
 | Java | JDK 21 |
 | Spring Boot | 4.1.1 |
 | Maven | Wrapper 固定 3.10.0，無須另外安裝 Maven |
-| Maven 座標 | `com.lancehuang:ai-devops-platform:0.0.1-SNAPSHOT` |
-| Java package | `com.lancehuang.aidevopsplatform` |
+| Maven 座標 | `com.delta.dms.ops:ai-devops-platform:0.0.1-SNAPSHOT` |
+| Java package | `com.delta.dms.ops.aidevopsplatform` |
 | 基礎依賴 | Spring Web MVC、Actuator、測試 starter |
 | 設定檔 | [application.properties](src/main/resources/application.properties) |
 
