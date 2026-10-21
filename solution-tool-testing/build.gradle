@@ -1,0 +1,2 @@
+description = 'ST solution and tool test contracts; excluded from production'
+dependencies { implementation project(':service') }

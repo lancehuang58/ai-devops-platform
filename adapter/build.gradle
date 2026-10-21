@@ -1,0 +1,7 @@
+plugins { id 'java-test-fixtures' }
+description = 'Outbound and event adapters; test doubles stay in test fixtures'
+dependencies {
+    implementation project(':service')
+    implementation 'org.springframework:spring-context'
+    testFixturesApi project(':service')
+}

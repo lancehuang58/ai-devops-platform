@@ -1,0 +1,4 @@
+interface:
+  display_name: "六角形 Gradle 模組設計"
+  short_description: "規劃 Java 與 Spring 專案的六角形模組邊界、依賴方向及單體部署"
+  default_prompt: "請使用 $design-hexagonal-gradle-modules 根據目前專案規格完成設計、實作或驗證。"

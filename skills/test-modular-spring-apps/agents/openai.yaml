@@ -1,0 +1,4 @@
+interface:
+  display_name: "模組單元與整合測試"
+  short_description: "分離六角形模組單元測試與 Web 整合測試，守住架構及模型品質界線"
+  default_prompt: "請使用 $test-modular-spring-apps 根據目前專案規格完成設計、實作或驗證。"

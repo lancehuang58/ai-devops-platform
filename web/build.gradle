@@ -1,0 +1,35 @@
+plugins { id 'org.springframework.boot' }
+description = 'Spring Boot composition root and integration tests'
+dependencies {
+    implementation project(':service')
+    implementation project(':adapter')
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    testImplementation 'com.tngtech.archunit:archunit:1.5.1'
+    testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+}
+
+sourceSets {
+    integrationTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+dependencies {
+    integrationTestImplementation testFixtures(project(':adapter'))
+}
+tasks.register('integrationTest', Test) {
+    description = 'Runs application integration tests in the web module.'
+    group = 'verification'
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    shouldRunAfter tasks.named('test')
+}
+tasks.named('check') { dependsOn tasks.named('integrationTest') }
+tasks.named('bootJar') { archiveBaseName = 'ai-devops-platform' }
+tasks.named('jar') { enabled = false }

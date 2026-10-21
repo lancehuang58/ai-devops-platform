@@ -1,8 +1,10 @@
 # DevOps 智慧維運應用系統設計規格書
 
-系統設計草案｜設計版本 0.40｜依據 SRS／SA 0.40｜2026 年 10 月 17 日（Asia/Taipei）
+系統設計草案｜設計版本 0.41｜依據 SRS／SA 0.40｜2026 年 10 月 21 日（Asia/Taipei）
 
 ## 文件定位
+
+> 2026-10-21 開發架構更新：依使用者指定採 Gradle 多模組、六角形架構、Domain Model 與事件通知。新增 SD-15；model／service／adapter／web 與 MQ／ST 共六模組。需求、授權、固定變更與原案例驗收基準不變；本次骨架測試不等於真實環境驗收。
 
 > 2026-10-17 已確認基準：D01～11 見 SRS-10。允許受控診斷與待審草稿；NORMAL_USER 可送已開放標準申請；CHANGE 回應逾時可按 SD-14.2 執行一次有條件唯讀查核；SYSTEM_RECORD 可有界補送且不阻擋維運；Jira workflow 依映射自動同步。其他維運重試、故障復跑、任意命令與未核准外送仍禁止。本版已取代相反的歷史政策，舊 schema／封存檔須按本版升版驗證後才可使用。
 
@@ -42,6 +44,7 @@
 | SD-12 | 單一 Job 備份刪除的 schema、MCP 契約、資料／期限及測試計畫 |
 | SD-13 | Job 內容自主 MCP 唯讀查詢、共同資料可見性、schema 與測試 |
 | SD-14 | 平台三模式、Teams、外部 API、知識、申請、紀錄、部署與測試 |
+| SD-15 | Gradle 六模組、Domain Model、Port／Adapter、事件與測試實作基準 |
 
 # SD-01 系統架構與元件責任
 
@@ -1651,3 +1654,45 @@ ST-PLT33～36 追加涵蓋查核許可、健康／restart 排除、歸因／hold
 | 15 官方來源 | SD-10.3／14.8；鎖版時核對，無真實端點不宣稱相容驗證 |
 
 開發填值不重新開放 D01～11：Teams app／租戶／可信帳號映射、LDAP、Qwen與外部 provider／模型 revision、export policy、Jira project／issue type／workflow transitions／結案條件、Confluence 目的地／版本／managed blocks、GitLab repo／reviewer、DB與extension版本、embedding、真實 MCP timeout／absence 契約、三種模板及 DB 秘密交付／到期方案、RPO／RTO／容量與保存政策。缺值的能力保持 disabled／DRAFT；已確認的一般規則仍有效。
+
+
+# SD-15 Gradle 多模組與六角形開發基準
+
+## SD-15.1 實體模組與依賴
+
+依 2026-10-21 使用者指示，採用六角形架構與以 Domain Model 為核心的設計。由內往外建構 model → service → web，編譯依賴反向為 web → service → model；adapter 實作 service ports，由 web 組裝。模組通訊以 interface 和 immutable contracts，只有 composition root 直接組裝 concrete implementations。
+
+| Gradle module | 邊界 | 第一版狀態 |
+|---|---|---|
+| model | 純 Java aggregate、snapshot、domain events | WorkRequest 初始受理／停止及事件已實作；完整流程待擴充 |
+| service | Use cases、in/out ports、交易與通知協調 | RegisterQueryUseCase、QueryAuthorization、WorkCommitPort、NotificationOutbox、NotificationRelay 骨架 |
+| adapter | 技術實作，不污染核心 | Spring 同步事件 bridge；journal 僅 testFixtures |
+| web | 唯一 Spring Boot entry point／composition root／整合測試 | 健康 endpoint；尚無維運業務 API |
+| model-quality-evaluation | 獨立模型品質驗證工具 | evaluator／結果契約和 harness unit tests；無實際模型 runner |
+| solution-tool-testing | 獨立方案與工具驗證工具 | runner／隔離情境契約和 harness unit tests；無真實 Connector runner |
+
+SD-01.5／14.1 的 access、resource、catalog、reasoning、workflow、execution、evidence、records 等先作為領域 package／port 邊界；待實作規模與 ownership 需要再拆成實體 modules。完整映射與檔案位置見 [Gradle 六角形架構](../design/gradle-hexagonal-architecture.md)。
+
+## SD-15.2 事件與可靠性
+
+領域事件由 aggregate 產生，以 WorkCommitPort 要求工作＋事件原子保存，事件發布經 interface／adapter。事件是事實，不是核准或新命令；禁止 listener 直接跳過中央 Dispatcher 執行維運。依賴相鄰模組的業務服務使用 interface，外部型別在 adapter 轉換。
+
+骨架 NotificationRelay 在同步 handler 成功後 ack，失敗停止批次並保留 pending；publish／ack 間中斷可能重播，consumer 必須冪等。目前只用測試 journal／projection 驗證行為，無 production DB outbox、worker scheduler 或自動重試。
+
+正式化前必須補 PostgreSQL 交易／唯一鍵、event version／sequence／causation、required consumers／交付義務、consumer ledger、claim／owner fencing、有界投遞與監控。目前 listener 在無匹配 handler 時拒絕處理；正式化時缺少任一必要 consumer 也不可算交付完成。測試記憶體 Set 不提供重啟後去重保證。
+
+工作通知、execution_outbox、record_outbox 分開；後兩者沿 SD-07／14.2／14.7。CHANGE 故障／重啟不重播，一次逾時唯讀查核仍受既定門檻限制；SYSTEM_RECORD 的補送也不得交給 generic notification relay。無需因本次事件設計引入 Kafka、RabbitMQ 或 Event Sourcing。
+
+## SD-15.3 測試與部署
+
+每個 module 的 src/test 驗證自己的行為，model／service unit tests 不啟動 Spring。adapter 的 shared doubles 放 src/testFixtures。web/src/test 用 ArchUnit 驗證核心純度與 port 邊界；所有應用 integration tests 放 web/src/integrationTest，包含 Spring／HTTP／跨模組事件及日後真實 DB／Connector 測試。
+
+`./gradlew clean build` 執行所有 unit tests 與 web integrationTest。只有 web 套用 Spring Boot packaging；正式 JAR 路徑 `web/build/libs/ai-devops-platform-0.0.1-SNAPSHOT.jar`。MQ／ST、test fixtures、gold 與測試憑證不得進入 production runtime。
+
+本次骨架測試涵蓋 27 項行為，實際公司 MQ／ST 案例仍 NOT_RUN；不得以 harness 通過宣稱 Qwen 或 Jenkins 整合通過。既有版本 Java 21、Spring Boot 4.1.1、Gradle Wrapper 9.8.1、group `com.delta.dms.ops` 持續使用。
+
+## SD-15.4 來源與 Skills
+
+已讀取 dddcleankanban commit `9bd34d03a32f266d705313b5347479cd3fad6972`，分析見 [參考專案架構分析](../design/dddcleankanban-architecture-analysis.md)。採用其 aggregate／port／adapter／composition root 與事件思路；不複製 save 後 memory publish 作可靠投遞、不忽略測試失敗、不沿用舊 framework 版本。
+
+五個開發 Skills 保存於根目錄 skills，分別為模組邊界、領域不變量、use-case ports、事件可靠性、測試分工；它們不得放寬 SRS／SA 的授權與停止政策。

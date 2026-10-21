@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use Case 與 Port 介面"
+  short_description: "透過輸入與輸出介面協調業務案例，隔離框架並維持授權及交易邊界"
+  default_prompt: "請使用 $implement-use-case-ports 根據目前專案規格完成設計、實作或驗證。"

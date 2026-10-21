@@ -1,0 +1,4 @@
+interface:
+  display_name: "領域事件與可靠投遞"
+  short_description: "設計事件與 Outbox 的交易、去重及失敗行為，避免重播造成重複操作"
+  default_prompt: "請使用 $design-safe-domain-events 根據目前專案規格完成設計、實作或驗證。"

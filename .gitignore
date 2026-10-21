@@ -47,3 +47,6 @@ gradlew.bat
 /src/main/resources/application-local.yml
 /src/main/resources/application-local.yaml
 
+
+# Gradle subproject output
+**/build/

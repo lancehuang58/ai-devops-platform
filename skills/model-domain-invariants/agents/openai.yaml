@@ -1,0 +1,4 @@
+interface:
+  display_name: "Domain Model 與不變量"
+  short_description: "以 Aggregate 與 Value Object 表達業務規則，驗證狀態轉移及領域事件"
+  default_prompt: "請使用 $model-domain-invariants 根據目前專案規格完成設計、實作或驗證。"
