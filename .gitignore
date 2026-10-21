@@ -50,3 +50,7 @@ gradlew.bat
 
 # Gradle subproject output
 **/build/
+
+# Local infrastructure configuration (may contain secrets)
+/config/*-local.yml
+/config/*-local.yaml

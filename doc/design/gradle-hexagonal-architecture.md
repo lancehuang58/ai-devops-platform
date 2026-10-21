@@ -1,6 +1,8 @@
 # Gradle 多模組、六角形架構與 Domain Model
 
-版本 1.0｜2026-10-21（Asia/Taipei）｜需求與分析基準 SRS／SA 0.40；對應 SD-15（SD 0.41）。
+版本 1.1｜2026-10-21（Asia/Taipei）｜需求與分析基準 SRS／SA 0.40；對應 SD-15／16（SD 0.42）。
+
+> 新增可執行的受管服務查詢切片，見 [Demo 設計](managed-service-demo.md)。下述初始 WorkRequest 骨架仍保留；demo profile 額外組裝 mock 身份／角色、YAML catalog、H2 報告與通知交易、查詢 API。真實 LDAP／Qwen／MCP／PostgreSQL 尚未實作。
 
 ## 1. 決策與完成範圍
 
@@ -14,8 +16,8 @@
 |---|---|---|---|
 | `model` | 純 Java aggregate、value/snapshot、domain events；初始 WorkRequest | JDK only | src/test：不變量、停止與事件 |
 | `service` | Inbound use cases、outbound ports、授權順序、原子提交契約、通知協調 | model（api） | src/test：fake ports、拒絕、提交失敗、ack 順序 |
-| `adapter` | 目前 Spring event bridge；日後 PostgreSQL、MCP、API、VM gateway、Qwen 等實作 | service（implementation）、Spring Context | src/test：轉接行為；src/testFixtures：InMemoryWorkJournal |
-| `web` | Spring Boot entry point、composition root；日後 REST／Teams ingress | service、adapter、Web MVC、Actuator | src/test：ArchUnit；src/integrationTest：完整組裝／HTTP／跨模組 |
+| `adapter` | Spring event bridge、demo YAML／mock／H2；日後 PostgreSQL、MCP、API、VM gateway、Qwen 等實作 | service（implementation）、Spring Context、SnakeYAML、H2 | src/test：轉接行為；src/testFixtures：InMemoryWorkJournal |
+| `web` | Spring Boot entry point、composition root、demo REST；日後 Teams ingress | service、adapter、Web MVC、Security、Actuator | src/test：ArchUnit；src/integrationTest：完整組裝／HTTP／跨模組 |
 | `model-quality-evaluation` | MQ evaluator interface、結果分類契約；後續 datasets／runner／grader | service；不被正式應用依賴 | src/test：harness 狀態不冒充模型品質 |
 | `solution-tool-testing` | ST runner interface、隔離測試情境契約；後續 fault fixtures／assertions | service；不被正式應用依賴 | src/test：拒絕正式環境、模式契約 |
 
@@ -58,7 +60,7 @@ flowchart TD
 - `service.port.out`：QueryAuthorization、WorkCommitPort、NotificationOutbox、DomainEventPublisher。
 - `service.work`／`service.event`：案例實作，只依賴 port interfaces／model／JDK。
 - `adapter.event`：Spring 對上述介面的實作；不依賴 RegisterQueryService 等實作。
-- `web.config`：唯一組裝位置，可引用 concrete constructors；其他呼叫者依賴 interface。目前僅組裝 event bridge。
+- `web.config`：唯一組裝位置，可引用 concrete constructors；其他呼叫者依賴 interface。預設只組裝 event bridge；demo 另組裝受管服務查詢。
 - `model.work.WorkRequest`：管理 receiveQuery 與 stop 不變量、產生 WorkReceived／WorkStopped；尚不提供完整 EXECUTING／VERIFYING 流程。
 
 不為每個 record 建 interface；「模組以 interface 溝通」約束的是可執行服務和外部能力。Aggregate 仍是具有行為的具體模型。HTTP DTO、JPA entity、MCP SDK、Spring AI response 必須在 adapter 轉換。
@@ -86,12 +88,12 @@ sequenceDiagram
     end
 ```
 
-圖中的儲存端由 WorkCommitPort／NotificationOutbox 兩個介面代表；目前只有 testFixtures 裡的 InMemoryWorkJournal 實作，**沒有 production durable outbox**。
+圖中的儲存端由 WorkCommitPort／NotificationOutbox 兩個介面代表；WorkRequest 使用 testFixtures 裡的 InMemoryWorkJournal；demo 另外以 H2 實作報告與通知的真實交易，**仍沒有 production durable outbox**。
 
 事件的處理規則：
 
 1. `WorkCommitPort.create` 契約要求工作與事件同一交易、全成全敗。測試 fixture 用同步區塊模擬，未驗證 PostgreSQL 的 isolation／lock／unique constraints。
-2. NotificationRelay 不直接執行 Jenkins 操作，不帶 scheduler、不自動重試；應用預設未建立 relay／RegisterQueryService bean。只有整合測試注入 fake authorization 和 journal。
+2. NotificationRelay 不直接執行 Jenkins 操作，不帶 scheduler、不自動重試；應用預設未建立 relay／RegisterQueryService bean；demo profile 為受管服務查詢建立 relay，未建立 RegisterQueryService。WorkRequest 整合測試仍注入 fake authorization 和 journal。
 3. Spring bridge 使用預設同步發布，handler 例外向上傳遞；不可加 @Async 後仍以 publish 返回作成功確認。
 4. publish 後、ack 前中斷可能重複投遞。consumer 必須去重；測試 projection 使用記憶體 Set 示範，正式去重需與 consumer effect 同交易持久化。
 5. 目前 listener 在沒有匹配 handler 時拋出例外，避免無人處理卻 ack。正式化前仍要有 consumer registry／required subscriptions、consumerId＋eventId ledger，並確認全部必要訂閱者的交付狀態。
@@ -126,6 +128,8 @@ Windows 用 `.\gradlew.bat`。`build` 包含所有 modules 的 unit／architectu
 首次實作驗證：共 **27 tests**，model 4、service 6、adapter 5、web unit/architecture 5、web integration 3、MQ harness 2、ST harness 2。通過項目包括健康 HTTP 200/UP、Spring 跨模組事件協作、ack-gap 重播去重、授權拒絕零提交及提交失敗不回 receipt。可執行 JAR 已確認包含 model／service／adapter、排除 MQ／ST／testFixtures，並實際啟動驗證健康 HTTP 200／UP。
 
 未測：公司 Qwen 品質、真 LDAP／RBAC、PostgreSQL 交易／競態、Jenkins MCP／備份／刪除、Jira／Confluence、所有真實外部契約。文件原有 actual_result／NOT_RUN 不回填。
+
+新增 demo 後目前共 **53 tests**：model 7、service 13、adapter 11、web unit/architecture 6、web integration 10、MQ harness 3、ST harness 3；全部通過。DB 讀回測試覆蓋奈秒時間精度，避免已回傳報告與持久化內容不同。
 
 ## 7. 下一個開發切片
 

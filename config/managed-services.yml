@@ -1,0 +1,25 @@
+# Sole source of managed resources for the demo; validated once at startup.
+# Connection endpoints are metadata in MOCK mode and never contacted.
+schema-version: 1
+services:
+  - id: jenkins-demo
+    name: Demo Jenkins
+    kind: JENKINS
+    environment: TEST
+    enabled: true
+    connection:
+      transport: MOCK
+      endpoint: https://jenkins.invalid
+      # credential-ref: secret/jenkins-demo  # Reference only; never a password/token.
+    health-profile: jenkins-basic-v1
+    timeout-seconds: 5
+  - id: jenkins-disabled
+    name: Disabled Jenkins
+    kind: JENKINS
+    environment: TEST
+    enabled: false
+    connection:
+      transport: MOCK
+      endpoint: https://disabled-jenkins.invalid
+    health-profile: jenkins-basic-v1
+    timeout-seconds: 5

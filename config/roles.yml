@@ -1,0 +1,7 @@
+# Authorization is independent of LDAP authentication.
+schema-version: 1
+accounts:
+  - username: admin
+    role: ADMIN
+  - username: normal
+    role: NORMAL_USER

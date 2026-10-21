@@ -1,0 +1,25 @@
+# Platform infrastructure only. Jenkins belongs to managed-services.yml.
+platform:
+  database:
+    mode: h2-mock
+    jdbc-url: "${PLATFORM_DB_URL:jdbc:h2:mem:devops_demo;DB_CLOSE_DELAY=-1}"
+    username: "${PLATFORM_DB_USERNAME:sa}"
+    password: "${PLATFORM_DB_PASSWORD:}"
+  ldap:
+    mode: mock
+    url: "${PLATFORM_LDAP_URL:ldap://ldap.invalid:389}"
+    base-dn: "${PLATFORM_LDAP_BASE_DN:dc=example,dc=invalid}"
+    bind-dn: "${PLATFORM_LDAP_BIND_DN:}"
+    bind-password: "${PLATFORM_LDAP_BIND_PASSWORD:}"
+    users:
+      admin: "${DEMO_ADMIN_PASSWORD:demo-admin}"
+      normal: "${DEMO_NORMAL_PASSWORD:demo-normal}"
+  llm:
+    mode: mock
+    base-url: "${PLATFORM_LLM_BASE_URL:https://qwen.invalid}"
+    api-key: "${PLATFORM_LLM_API_KEY:}"
+    model-name: "${PLATFORM_LLM_MODEL:qwen-mock}"
+  catalog:
+    mode: yaml
+    file: "${MANAGED_SERVICES_CONFIG:./config/managed-services.yml}"
+  roles-file: "${ROLE_CONFIG:./config/roles.yml}"

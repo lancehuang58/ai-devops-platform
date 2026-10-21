@@ -1,8 +1,10 @@
 # DevOps 智慧維運應用系統設計規格書
 
-系統設計草案｜設計版本 0.41｜依據 SRS／SA 0.40｜2026 年 10 月 21 日（Asia/Taipei）
+系統設計草案｜設計版本 0.42｜依據 SRS／SA 0.40｜2026 年 10 月 21 日（Asia/Taipei）
 
 ## 文件定位
+
+> 2026-10-21 受管服務 Demo 更新：新增 SD-16。系統 DB／LDAP／LLM 與 Jenkins 等受管資源分開設定；明確啟用 demo profile 後，以 H2／mock 提供可執行查詢切片，web 整合測試涵蓋六模組。真實連線與原正式 MQ／ST 案例仍待驗證。
 
 > 2026-10-21 開發架構更新：依使用者指定採 Gradle 多模組、六角形架構、Domain Model 與事件通知。新增 SD-15；model／service／adapter／web 與 MQ／ST 共六模組。需求、授權、固定變更與原案例驗收基準不變；本次骨架測試不等於真實環境驗收。
 
@@ -45,6 +47,7 @@
 | SD-13 | Job 內容自主 MCP 唯讀查詢、共同資料可見性、schema 與測試 |
 | SD-14 | 平台三模式、Teams、外部 API、知識、申請、紀錄、部署與測試 |
 | SD-15 | Gradle 六模組、Domain Model、Port／Adapter、事件與測試實作基準 |
+| SD-16 | 初始化設定、受管服務 catalog 與六模組 demo |
 
 # SD-01 系統架構與元件責任
 
@@ -1666,8 +1669,8 @@ ST-PLT33～36 追加涵蓋查核許可、健康／restart 排除、歸因／hold
 |---|---|---|
 | model | 純 Java aggregate、snapshot、domain events | WorkRequest 初始受理／停止及事件已實作；完整流程待擴充 |
 | service | Use cases、in/out ports、交易與通知協調 | RegisterQueryUseCase、QueryAuthorization、WorkCommitPort、NotificationOutbox、NotificationRelay 骨架 |
-| adapter | 技術實作，不污染核心 | Spring 同步事件 bridge；journal 僅 testFixtures |
-| web | 唯一 Spring Boot entry point／composition root／整合測試 | 健康 endpoint；尚無維運業務 API |
+| adapter | 技術實作，不污染核心 | Spring 同步事件 bridge；WorkRequest journal 僅 testFixtures；另有 SD-16 的 demo H2／mock adapters |
+| web | 唯一 Spring Boot entry point／composition root／整合測試 | 健康 endpoint；SD-16 另提供 demo 查詢 API，尚無正式維運 API |
 | model-quality-evaluation | 獨立模型品質驗證工具 | evaluator／結果契約和 harness unit tests；無實際模型 runner |
 | solution-tool-testing | 獨立方案與工具驗證工具 | runner／隔離情境契約和 harness unit tests；無真實 Connector runner |
 
@@ -1677,7 +1680,7 @@ SD-01.5／14.1 的 access、resource、catalog、reasoning、workflow、executio
 
 領域事件由 aggregate 產生，以 WorkCommitPort 要求工作＋事件原子保存，事件發布經 interface／adapter。事件是事實，不是核准或新命令；禁止 listener 直接跳過中央 Dispatcher 執行維運。依賴相鄰模組的業務服務使用 interface，外部型別在 adapter 轉換。
 
-骨架 NotificationRelay 在同步 handler 成功後 ack，失敗停止批次並保留 pending；publish／ack 間中斷可能重播，consumer 必須冪等。目前只用測試 journal／projection 驗證行為，無 production DB outbox、worker scheduler 或自動重試。
+骨架 NotificationRelay 在同步 handler 成功後 ack，失敗停止批次並保留 pending；publish／ack 間中斷可能重播，consumer 必須冪等。WorkRequest 使用測試 journal／projection 驗證行為；SD-16 demo 另有 H2 通知交易，仍無 production DB outbox、worker scheduler 或自動重試。
 
 正式化前必須補 PostgreSQL 交易／唯一鍵、event version／sequence／causation、required consumers／交付義務、consumer ledger、claim／owner fencing、有界投遞與監控。目前 listener 在無匹配 handler 時拒絕處理；正式化時缺少任一必要 consumer 也不可算交付完成。測試記憶體 Set 不提供重啟後去重保證。
 
@@ -1687,7 +1690,7 @@ SD-01.5／14.1 的 access、resource、catalog、reasoning、workflow、executio
 
 每個 module 的 src/test 驗證自己的行為，model／service unit tests 不啟動 Spring。adapter 的 shared doubles 放 src/testFixtures。web/src/test 用 ArchUnit 驗證核心純度與 port 邊界；所有應用 integration tests 放 web/src/integrationTest，包含 Spring／HTTP／跨模組事件及日後真實 DB／Connector 測試。
 
-`./gradlew clean build` 執行所有 unit tests 與 web integrationTest。只有 web 套用 Spring Boot packaging；正式 JAR 路徑 `web/build/libs/ai-devops-platform-0.0.1-SNAPSHOT.jar`。MQ／ST、test fixtures、gold 與測試憑證不得進入 production runtime。
+`./gradlew clean build` 執行所有 unit tests 與 web integrationTest。只有 web 套用 Spring Boot packaging；正式 JAR 路徑 `web/build/libs/ai-devops-platform-0.0.1-SNAPSHOT.jar`。MQ／ST、test fixtures、gold 不得進入 production runtime。SD-16 的 mock adapters 僅由明確 demo profile 啟用，合成帳密放外部 demo 設定，不打包進 JAR。
 
 本次骨架測試涵蓋 27 項行為，實際公司 MQ／ST 案例仍 NOT_RUN；不得以 harness 通過宣稱 Qwen 或 Jenkins 整合通過。既有版本 Java 21、Spring Boot 4.1.1、Gradle Wrapper 9.8.1、group `com.delta.dms.ops` 持續使用。
 
@@ -1696,3 +1699,38 @@ SD-01.5／14.1 的 access、resource、catalog、reasoning、workflow、executio
 已讀取 dddcleankanban commit `9bd34d03a32f266d705313b5347479cd3fad6972`，分析見 [參考專案架構分析](../design/dddcleankanban-architecture-analysis.md)。採用其 aggregate／port／adapter／composition root 與事件思路；不複製 save 後 memory publish 作可靠投遞、不忽略測試失敗、不沿用舊 framework 版本。
 
 五個開發 Skills 保存於根目錄 skills，分別為模組邊界、領域不變量、use-case ports、事件可靠性、測試分工；它們不得放寬 SRS／SA 的授權與停止政策。
+
+
+# SD-16 初始化設定與受管服務查詢 Demo
+
+## SD-16.1 系統初始化與資源清單分離
+
+`config/system-demo.yml` 僅配置系統 DB／LDAP／LLM 與 catalog／roles 來源位置；Jenkins 是被管理的資源，放在獨立 `config/managed-services.yml`。角色映射放 `config/roles.yml`。設定／API／示例詳見 [受管服務查詢 Demo](../design/managed-service-demo.md)。
+
+此版明確啟用 demo profile 才載入：DB=h2-mock（H2 in-memory 真 JDBC transaction）、LDAP=mock、LLM=mock、catalog=yaml。預設 profile 不載入這些 demo 依賴或帳號。非法 provider mode、缺失或錯誤 catalog 不靜默退回 mock。LDAP/Qwen URL/key 是待實作 adapter 的預留參數，不代表只填值即可接通。
+
+服務 catalog 為 immutable startup snapshot，包含 id／name／kind／environment／enabled／connection.transport／endpoint／credential-ref／health-profile／timeout-seconds；此版只允許 TEST／MOCK／JENKINS／jenkins-basic-v1，無網路 probe、無動態命令。秘密只存引用，不放 plaintext。新增服務類型需新增 model／probe／profile 與測試，不以任意 YAML 自動解鎖能力。
+
+本版 YAML 是唯一 catalog 權威，不同步 seed 到 DB。未來需要 UI、多人編輯、審批、歷史版本時，以 ManagedServiceRepository 的 DB adapter 替換，明確匯入／驗證後切換，禁止兩個可寫權威來源或每次啟動覆寫資料庫。DB 自身連線資訊仍留在外部系統設定。
+
+## SD-16.2 已實作切片與介面
+
+已驗證身份 → Role config 授權 → ManagedServiceRepository 取得 enabled 資源 → ServiceProbePort → ServiceSummaryPort → InspectionReport → InspectionRepository 原子保存報告／ServiceInspected → DeliverNotificationsUseCase → DomainEventHandler → EventReceiptPort → ack → HTTP 回應。
+
+model 保存不變量，service 協調 ports，adapter 實作 YAML／H2／mock／Spring bridge，web 組裝和提供查詢 API。MQ 使用同一 summary port，ST 使用同一 query port，於 web integration tests 執行；兩個品質模組不進應用 runtime。資料狀態以 Observation 為準，LLM 只能提供文字摘要，回應帶 modelName／probeMocked／modelMocked。
+
+Demo API：GET /api/v1/managed-services、GET /api/v1/managed-services/{id}/status、GET /api/v1/reports/{id}。status 每次查詢建立新報告，report 讀回不重新 probe。Demo 使用本機 HTTP Basic + stateless 認證，Principal 由 directory port 產生；ADMIN／NORMAL_USER 均可查合成非敏感結果。這不取代正式 LDAP／session、敏感資料遮罩、中央 Dispatcher、raw evidence 管制或 CHANGE 核准契約。
+
+## SD-16.3 DB／事件與限制
+
+H2 建立 demo_inspection、demo_notification_outbox、demo_event_receipt；報告與 outbox 同交易，通知只在 commit 後同步發送，固定必要 consumer 收據保存後才 ack。收據 event_id 唯一，重複投遞冪等。通知失敗保留已提交報告與 pending；交易失敗全回滾。
+
+每次查詢提交後處理最多 100 筆 pending 通知，無排程 worker。單 JVM synchronized 不等於分散式 claim；只有一個必要 consumer，不是 production 訂閱 registry。H2 記憶體資料隨 JVM 結束消失，不宣稱有 PostgreSQL durability、備份或重啟恢復。此通知路徑不承載 CHANGE／execution_outbox／record_outbox。
+
+## SD-16.4 測試與驗收分類
+
+各模組 unit tests 覆蓋觀測不變量、授權／probe／模型／提交／通知順序、config 驗證、mock 身份與模式拒絕。web integration tests 覆蓋完整 HTTP 授權、停用資源、報告讀回、模型名稱覆寫、六模組組裝、H2 transaction rollback、重複收據、無收據不 ack。
+
+MQ-DEMO-001 為 STUB，因此只能 HARNESS_ONLY 或 FAIL；ST-DEMO-001 為 OFFLINE，不宣稱 TEST_SERVICE 成功。兩者與 doc/testing 中既有 NOT_RUN 案例分開。正式化時仍須取得實際端點、實作 adapter／資料遮罩／完整控制，再執行 REAL_QWEN 與 TEST_SERVICE；不以 demo PASS 取代。
+
+本版開發測試實測為 53 項、0 失敗／0 跳過，其中 web 整合測試 10 項；這是 demo／harness 的實作證據，不變更真實公司案例的 NOT_RUN 狀態。

@@ -3,5 +3,7 @@ description = 'Outbound and event adapters; test doubles stay in test fixtures'
 dependencies {
     implementation project(':service')
     implementation 'org.springframework:spring-context'
+    implementation 'org.yaml:snakeyaml'
+    implementation 'com.h2database:h2'
     testFixturesApi project(':service')
 }

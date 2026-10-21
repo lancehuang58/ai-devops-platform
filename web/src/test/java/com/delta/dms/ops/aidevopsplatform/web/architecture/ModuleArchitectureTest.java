@@ -23,7 +23,7 @@ class ModuleArchitectureTest {
     }
     @Test void adaptersUsePortsInsteadOfApplicationImplementations() {
         noClasses().that().resideInAPackage("..adapter..")
-                .should().dependOnClassesThat().resideInAnyPackage("..service.work..", "..service.event..", "..web..")
+                .should().dependOnClassesThat().resideInAnyPackage("..service.work..", "..service.event..", "..service.monitoring..", "..web..")
                 .check(classes);
     }
     @Test void portTypesAreInterfacesOrImmutableContracts() {
