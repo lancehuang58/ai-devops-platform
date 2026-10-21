@@ -23,3 +23,21 @@
 hs_err_pid*
 replay_pid*
 .idea
+
+# Maven and local build output
+/target/
+/out/
+
+# Editor and local configuration
+.classpath
+.project
+.settings/
+.vscode/
+*.iml
+.DS_Store
+.env
+.env.*
+!.env.example
+/src/main/resources/application-local.properties
+/src/main/resources/application-local.yml
+/src/main/resources/application-local.yaml
