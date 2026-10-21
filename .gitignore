@@ -24,9 +24,12 @@ hs_err_pid*
 replay_pid*
 .idea
 
-# Maven and local build output
-/target/
+# Gradle and local build output
+.gradle/
+/build/
 /out/
+/target/
+!gradle/wrapper/gradle-wrapper.jar
 
 # Editor and local configuration
 .classpath
