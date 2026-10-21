@@ -2,7 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/ai-devops-platform.iml" filepath="$PROJECT_DIR$/.idea/ai-devops-platform.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ai-devops-platform.iml" filepath="$PROJECT_DIR$/.idea/modules/ai-devops-platform.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ai-devops-platform.main.iml" filepath="$PROJECT_DIR$/.idea/modules/ai-devops-platform.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ai-devops-platform.test.iml" filepath="$PROJECT_DIR$/.idea/modules/ai-devops-platform.test.iml" />
     </modules>
   </component>
 </project>
