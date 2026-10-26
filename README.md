@@ -4,7 +4,7 @@
 
 請從 **[文件索引](doc/README.md)** 開始閱讀。
 
-- 對齊需求（`doc/specifications/aligned/aligned-requirements.md`，U1–U42）：**0.52**。舊版 SRS／SA／SD 草稿若與對齊需求衝突，以對齊需求為準。
+- 對齊需求（`doc/specifications/aligned/aligned-requirements.md`，U1–U45）：**0.53**。舊版 SRS／SA／SD 草稿若與對齊需求衝突，以對齊需求為準。
 - 模型品質評估（MQ）及方案與工具測試（ST）：兩份獨立案例集，**0.5**。
 - 首批案例：Jenkins Job 內容查詢、單一 Job 設定備份與刪除。
 - 正式端點與實際測試資料尚待提供；規格中的預期結果不是實測通過證明。
@@ -20,7 +20,9 @@ v1 包含：
 - `work_task` 以 `FOR UPDATE SKIP LOCKED` 領取。`platform.workflow.workers` 可配置（建議 8）。等待狀態會寫回資料庫並釋放 worker。同一資源的補救鎖依 SD-18：執行中的租約過期不會自動放開。
 - Jira 同步 outbox 存在 PostgreSQL。暫時失敗最多 5 次重試後停止並留給人工。Jira、Teams、Qwen／LiteLLM、MCP／VM 都在 port 後面；v1 用假實作，不會打外網。
 - 已知解法與自動補救白名單在領域政策裡。沒有命中白名單就停在待核准；沒有人核准就維持 pending。結案草稿必須由使用者確認。
-- 表單登入不看角色，登入後每個人看到相同清單。清單可依系統、台北時間範圍、狀態篩選，每頁 20／50／100（預設 50），預設只顯示未結案。明細頁有時間軸。
+- GitLab OIDC 登入（`openid profile email`），不看角色，登入後每個人看到相同清單，並回到原本的深連結。清單可依系統、台北時間範圍、狀態篩選，每頁 20／50／100（預設 50），預設只顯示未結案。明細頁有時間軸。
+- 受管服務與整合服務寫在 [`config/platform-services.yml`](config/platform-services.yml)。秘密只寫 `${NAME}`。啟動時檢查缺欄位、解不出來的參考、未知 template、重複 id。
+- 監控模板的探測順序是 endpoint、MCP、API、VM（Glove）。通道本身失敗才換下一層；服務不健康立刻開案；全部失敗才標 down 並把每一層原因放進單裡。較低通道仍健康時只發一則通道降級通知。週期探測預設關閉。
 - 人工商用模型接管：下載遮罩後的 zip、寫回、以 `FORCED_BY_COMMERCIAL_MODEL` 結案。平台不會呼叫商用模型。
 
 本地執行需要 PostgreSQL 16：
@@ -30,7 +32,19 @@ docker run -d --name aidevops-pg -e POSTGRES_USER=aidevops -e POSTGRES_PASSWORD=
 ./gradlew :web:bootRun --args='--spring.profiles.active=platform'
 ```
 
-開啟 `http://127.0.0.1:8080/login`。預設帳號是 `ops`／`change-me`（`platform.auth.users.ops.password`），告警權杖是 `dev-alert-token`（標頭 `X-Alert-Token`）。請在正式環境改掉這兩個值。Alertmanager 路徑是 `POST /api/v1/alerts/alertmanager`，通用路徑是 `POST /api/v1/alerts/generic`。
+啟動前要提供 GitLab 與目錄裡的秘密參考。值放在環境變數或 Kubernetes Secret，不要寫進 YAML：
+
+```bash
+export GITLAB_BASE_URL=https://gitlab.example.internal
+export GITLAB_OAUTH_CLIENT_ID=...
+export GITLAB_OAUTH_CLIENT_SECRET=...
+export GITLAB_TOKEN=... JENKINS_TOKEN=... GLOVE_TOKEN=...
+export JIRA_TOKEN=... TEAMS_WEBHOOK=... LITELLM_API_KEY=...
+```
+
+開啟 `http://127.0.0.1:8080/login`，用「以 GitLab 登入」。GitLab 必須已登記 redirect URI `{平台網址}/login/oauth2/code/gitlab`。告警權杖是 `dev-alert-token`（標頭 `X-Alert-Token`）。請在正式環境改掉這個值。Alertmanager 路徑是 `POST /api/v1/alerts/alertmanager`，通用路徑是 `POST /api/v1/alerts/generic`。
+
+服務目錄的範例在 `config/platform-services.yml`：gitlab、jenkins、vm 三種模板，以及 gitlab-prod、jenkins-prod、vm-jenkins-01 三個實例。改 `platform.catalog.file` 可指向別的檔案。`platform.monitoring.enabled=true` 才會每分鐘探測；預設的通道 adapter 不會連外，接上真實 endpoint／MCP／Glove client 之前請保持關閉。
 
 ```bash
 ./gradlew build

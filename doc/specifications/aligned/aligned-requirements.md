@@ -2,11 +2,11 @@
 
 | 項目 | 內容 |
 |---|---|
-| 文件性質 | 對齊後的**目標需求**基準；SRS／SA／SD 0.52 依本文件改寫（舊 0.40～0.42 中衝突的條文已刪改，見附錄 A） |
+| 文件性質 | 對齊後的**目標需求**基準；SRS／SA／SD 0.53 依本文件改寫（舊 0.40～0.42 中衝突的條文已刪改，見附錄 A） |
 | 依據 | 儲存庫 `lancehuang58/ai-devops-platform` commit `2661434` 的 `doc/specifications/` 三份規格書，加上使用者 2026-10 的 42 項決策（見 §0；U35～U38 依 2026-10-26 Web 介面需求，並沿用 commit `b8a23d4` 的管理登入 demo；U39～U42 依 2026-10-26「Qwen 不穩定時改用商用模型介入並強制結案」需求） |
 | 搭配文件 | [`alert-event-and-dedup-design.md`](./alert-event-and-dedup-design.md)：監控事件格式、去重資料結構與流程 |
-| 版本 | 第五版（2026-10-26）：納入 U39～U42（商用模型人工接管、接管包、寫回與強制結案、只用訂閱方案，§20）；§16 新增 Q27～Q31 建議值待確認。第四版（2026-10-26）：納入 U35～U38（Web 介面、技術選型、並行推進與資源鎖，§17～§19）；§16 新增 Q22～Q26 建議值待確認。第三版（2026-10-26）：納入 U20～U34，所有待確認項目都已決定（§16）。第二版：納入 U14～U19；跨資源關聯改為「先整合成一則通知，確認是同一事件後才開單」 |
-| 狀態 | 已確認（2026-10-26，使用者回覆「全部如建議」）。SRS／SA／SD 已依附錄 A 刪改並升為 0.50（本機分支 `docs/aligned-requirements`）。第四版 U35～U38 依使用者 2026-10-26 指示（Web 登入／清單／篩選／明細；前端採 Thymeleaf＋htmx）；Q22～Q26 為建議值，尚待使用者確認；SRS／SA／SD 隨之升為 0.51。第五版 U39～U42 依使用者 2026-10-26 需求（Qwen 不穩定、服務停擺時，人工改用商用模型處理後強制結案）與可行性評估（§20.1）；Q27～Q31 為建議值，尚待使用者確認；SRS／SA／SD 隨之升為 0.52 |
+| 版本 | 第六版（2026-10-26）：納入 U43～U45（平台 Web 改接公司 GitLab OIDC、YAML 服務目錄與秘密參考、監控模板與探測鏈，§21）。第五版（2026-10-26）：納入 U39～U42（商用模型人工接管、接管包、寫回與強制結案、只用訂閱方案，§20）；§16 新增 Q27～Q31 建議值待確認。第四版（2026-10-26）：納入 U35～U38（Web 介面、技術選型、並行推進與資源鎖，§17～§19）；§16 新增 Q22～Q26 建議值待確認。第三版（2026-10-26）：納入 U20～U34，所有待確認項目都已決定（§16）。第二版：納入 U14～U19；跨資源關聯改為「先整合成一則通知，確認是同一事件後才開單」 |
+| 狀態 | 已確認（2026-10-26，使用者回覆「全部如建議」）。SRS／SA／SD 已依附錄 A 刪改並升為 0.50（本機分支 `docs/aligned-requirements`）。第四版 U35～U38 依使用者 2026-10-26 指示（Web 登入／清單／篩選／明細；前端採 Thymeleaf＋htmx）；Q22～Q26 為建議值，尚待使用者確認；SRS／SA／SD 隨之升為 0.51。第五版 U39～U42 依使用者 2026-10-26 需求（Qwen 不穩定、服務停擺時，人工改用商用模型處理後強制結案）與可行性評估（§20.1）；Q27～Q31 為建議值，尚待使用者確認；SRS／SA／SD 隨之升為 0.52。第六版 U43～U45 依使用者 2026-10-26 需求（平台登入改為公司 GitLab OAuth、服務與整合設定改為 YAML、監控依模板探測並依通道失敗才降級）；SRS／SA／SD 隨之升為 0.53 |
 | EIP 引用 | 《企業集成模式》中譯本，格式為「模式名（節號，書頁）」 |
 
 ---
@@ -57,6 +57,9 @@
 | U40 | 接管包：平台匯出單一接管包（告警、已收集的調查資料、目前狀態與歷程、已提出的解法、相關白名單與規則）；匯出前在伺服器端遮罩密碼、token、金鑰與內部秘密；每次產生與下載都寫稽核 | §20.4 |
 | U41 | 寫回與強制結案：操作者經 Web／API 寫回摘要、根因、已執行處置與驗證證據後，可強制結案，`closure_reason=FORCED_BY_COMMERCIAL_MODEL`，因為是人觸發所以**不經結案草稿確認**（U11 的例外）；經平台執行的修改仍受核准、白名單、資源鎖與 kill switch 規則約束；平台外的手動動作由操作者負責，並須寫在寫回內容中 | §20.5～§20.8 |
 | U42 | 只用訂閱方案：商用模型只用個人訂閱（ChatGPT Plus／Pro、Claude Pro／Max），**不用 API key**，因此平台不經 LiteLLM 呼叫商用模型，也不發機器憑證給 CLI 回呼；訂閱條款以個人、互動使用為主，不能做成無人值守的後端；有用量上限；導入前要重新確認供應商條款與公司資料政策 | §20.1、§20.9 |
+| U43 | 平台 Web 登入改為公司自建 GitLab 的 OIDC authorization code（scopes `openid profile email`）。GitLab 本身已接 LDAP，平台不再做 LDAP bind，也不把 GitLab 群組變成角色；任何通過驗證的使用者看到相同內容。Client id／secret 與 GitLab base URL 來自設定。登入後回到原本請求的深連結 | §12.2、§17.1、§18、§21.1 |
+| U44 | 受管服務與整合服務都寫在 YAML，以型別化的 `@ConfigurationProperties` 載入。秘密不得寫死在檔案，只能寫 `${NAME}` 這種環境變數／Kubernetes Secret 參考。啟動時檢查，缺欄位、解不出來的參考、未知 template type、重複 id 都立刻失敗；日誌不得出現秘密值 | §12.1、§21.2 |
+| U45 | 每種服務類型有監控模板（預設探測、間隔、門檻）；每個實例提供 id、type、environment、URL、憑證參考與覆寫。探測順序固定為 endpoint → MCP server → API → VM。VM 經名為 Glove 的 SSH-tool MCP server 查狀態。只有通道本身失敗才換下一層；通道回報服務不健康就立刻告警、不再往下。全部通道都失敗才判定服務 down／unknown，單上帶每一層原因。較高通道失敗但較低通道健康時，只發一則不重複的「監控通道降級」通知、不開事故單。結果記得出自哪個通道、為何 fallback，並進入既有標準告警與去重（source 例 `probe`）。這條順序只用於監控，變更執行仍不自動換路徑 | §5.1、§12.1、§21.3 |
 
 ---
 
@@ -316,6 +319,7 @@ flowchart TD
 
 - 一個來源掛掉（例如 Alertmanager 失聯或 webhook 認證失敗）時，產生平台自身的 `MONITOR_SOURCE_UNAVAILABLE` 事件，同樣走去重，不阻擋其他來源。
 - 「監控來源本身健康」和「受管服務健康」分開記錄，不可把來源失聯當成受管服務故障。
+- 平台主動探測（U45）依 endpoint → MCP server → API → VM（Glove）固定順序。只有通道本身失敗（逾時、連線被拒、DNS、TLS、認證失敗、MCP server 不可用）才換下一層；通道有回應且服務不健康就立刻開案，不再往下探測。細節見 §21.3。這條順序只用於監控，不改變 §12.1 的變更執行路徑。
 - 新增來源、check、mapping rule 都要版本化、可停用；未啟用不計入任何門檻。
 
 ### 5.2 標準告警事件
@@ -529,8 +533,8 @@ Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維�
 
 | 邊界 | 要求 |
 |---|---|
-| 接入路由 | 每個能力發布時固定一條路徑：MCP → API → 公司 VM gateway；執行失敗**不自動換路徑** |
-| SSH | Bot／Qwen 不直接 SSH、不持有 SSH 私鑰、不接受任意 shell；只呼叫 VM gateway 已登錄的 action |
+| 接入路由 | 每個能力發布時固定一條路徑：MCP → API → 公司 VM gateway；執行失敗**不自動換路徑**。監控探測的通道順序（U45）是另一件事，不得拿來當作變更執行的自動換路 |
+| SSH | Bot／Qwen 不直接 SSH、不持有 SSH 私鑰、不接受任意 shell；只呼叫 VM gateway 已登錄的 action。監控的最後一層 VM 狀態也只經名為 Glove 的 SSH-tool MCP server（U45），平台不持有該金鑰、不開 shell |
 | 命令 | 只執行已發布的 command／solution；模型不得生成任意 SQL／shell／API 呼叫；`CommandType` 由命令目錄決定 |
 | 單一派送 | 每個 CHANGE 只有一次派送許可；失敗不重送、不回滾、不補償；D02 只允許一次逾時唯讀查核 |
 | 秘密 | 憑證只存 secret reference；SecretFilter／OutputGuard 雙重檢查；秘密不進模型、Jira、知識、log |
@@ -542,7 +546,7 @@ Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維�
 
 ### 12.2 移除角色區分（U13）
 
-- 身分：LDAP 認證＋Teams 帳號連結保留；只有一種已驗證使用者。
+- 身分：platform Web 以公司自建 GitLab 的 OIDC authorization code 登入（U43，scopes `openid profile email`）；GitLab 本身接 LDAP，平台不做 LDAP bind，也不採用 GitLab 群組當角色。demo profile 仍是本地 mock 表單，不是正式身分。Teams 帳號連結保留給 Teams 入口。只有一種已驗證使用者。
 - 移除：ADMIN／NORMAL_USER、SA-01.1 權限矩陣、role_config、「NORMAL_USER 不可核准」、「ADMIN-only」等規則（清單見附錄 A）。
 - 原本 ADMIN-only、現在**改為所有已驗證使用者可操作，但每次都要寫稽核**的動作：raw evidence 檢視、核准變更、方案／規則／monitor source 設定、resource_hold／execution_hold 解除、外部模型 grant、知識審查發布。
 - 未來要重新加入角色時，以「動作權限清單＋principal 對應」加回，不影響狀態機與資料表結構（這是保留的擴充點，不是本版需求）。
@@ -659,7 +663,7 @@ Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維�
 
 ### 17.1 範圍
 
-- 已驗證使用者以公司帳號密碼登入（LDAP bind，§12）；登入後首頁就是工作項目清單。未登入不能看清單、明細或任何工作項目資料。
+- 已驗證使用者以公司 GitLab 登入（OIDC authorization code，U43）；登入後回到原本請求的深連結，直接開登入頁時進入工作項目清單。未登入不能看清單、明細或任何工作項目資料。
 - 不分角色（U13）：所有登入者看到相同的清單、明細與安全投影。raw evidence 仍只在受控頁面檢視、每次稽核（U28）；秘密任何情況都不顯示。
 - 本項定義「看」：清單、篩選、明細與時間軸。已決定的其他 Web 操作（事件候選確認與補開單 U31、U33，kill switch §13.2，raw 檢視 U28）沿用同一介面與登入；Web 是否也提供核准與結案確認按鈕見 Q23。
 - Teams 通知裡的工作項目連結可以直接開明細頁；未登入先登入（登入後回到哪裡見 Q22）。
@@ -701,7 +705,7 @@ Spring Boot 生態系由使用者指定；其餘依本平台架構（模組化�
 | 資料庫 | PostgreSQL（版本依 SD-14.8） | 唯一索引與部分唯一索引做去重（設計文件 B）；JSONB 保存原始 payload；`SELECT … FOR UPDATE SKIP LOCKED` 做多 worker 佇列；交易內條件更新做發送許可 |
 | Schema 版本 | Flyway | 版本化 SQL migration，可審查、可重放；由部署身分執行，App runtime 不持有 DDL 權限，Hibernate 只做 `validate` |
 | 資料存取 | Spring Data JPA（Hibernate）；清單篩選用 Specification＋分頁 | 與 Spring 生態一致；條件組合簡單。需要複雜報表 SQL 時再評估 jOOQ，不同時引入兩套 |
-| 登入 | Spring Security 表單登入＋伺服器端 session；帳密以 LDAP bind 驗證（SD-03.1） | 沿用 `b8a23d4` 管理登入 demo 的 filter chain 做法；之後可選加 OIDC（Keycloak 或 AD FS／Entra 接 LDAP／AD），只換登入方式，不改 principal 與資料表 |
+| 登入 | platform profile：Spring Security OAuth2 Client，對可設定的 GitLab base URL 做 OIDC authorization code（scopes `openid profile email`）＋伺服器端 session（U43）。demo profile 仍是表單登入 | GitLab 已接 LDAP，平台不再做 LDAP bind，也不把群組變成角色；深連結在登入後回到原請求。demo 的 filter chain 仍沿用 `b8a23d4`，與正式登入分開 |
 | 前端 | Thymeleaf＋htmx，與 App 同一部署 | 使用者選定；伺服器端渲染、局部更新清單與明細區塊，不需獨立前端 build；htmx 檔案放 App 靜態資源，不用 CDN |
 | 測試 | Testcontainers PostgreSQL 做整合測試 | H2 不支援部分索引與 JSONB，不能代表 PostgreSQL 行為；H2 只留給 demo profile |
 | 不引入 | Kafka／RabbitMQ／Redis、React／Vue SPA、獨立 read DB | NFR-A10；使用者選定前端；清單直接查主庫 |
@@ -874,6 +878,52 @@ worker 數量全部可配置。建議預設（Q25）：流程推進 8、唯讀 Q
 
 - case_event：`TAKEOVER_STARTED`、`TAKEOVER_HANDED_OVER`、`TAKEOVER_PACKAGE_CREATED`、`TAKEOVER_PACKAGE_DOWNLOADED`、`TAKEOVER_WRITEBACK_SUBMITTED`、`FORCE_CLOSED`、`TAKEOVER_RELEASED`。
 - 指標（加到 §13.3）：接管次數（依原因、工具）、接管時長、強制結案比例、強制結案後 7 天內重開比例、接管包遮罩排除數。
+
+---
+
+## 21. GitLab 登入、服務目錄與監控探測鏈（U43～U45）
+
+### 21.1 平台登入（U43）
+
+- 正式 `platform` profile 的 Web 登入是公司自建 GitLab 的 OIDC authorization code。GitLab base URL 可設定；discovery 使用該 URL 的 `/.well-known/openid-configuration`。scopes 固定 `openid`、`profile`、`email`。
+- Client id 與 client secret 只從設定讀取，檔案裡寫環境參考，不寫字面值。
+- GitLab 群組、scope 或其他 claim 都不變成應用角色。通過驗證的使用者一律是同一種已驗證使用者（U13），看到相同的清單與明細。
+- 未登入者打開深連結時，登入完成後回到該請求；直接開登入頁才進 `/work-items`。
+- `demo` profile 仍用本地 mock 表單，供管理頁示範，不是正式身分來源。
+- 測試使用行程內的 mock OIDC provider。不連真的 GitLab。
+
+### 21.2 服務目錄（U44）
+
+- 受管服務（GitLab、Jenkins、Rancher、VM、Nexus、Harbor、MariaDB、Postgres 等）與整合服務（Jira、Teams、LiteLLM／Qwen、GitLab OAuth、MCP server）寫在同一份 YAML。
+- 載入結果是型別化的 `@ConfigurationProperties`（prefix `platform.services`）。範例檔是 `config/platform-services.yml`：每種服務類型一個 template，並附 2～3 個實例。
+- 秘密欄位只能是 `${NAME}`（名稱為大寫英數與底線）。字面密碼、token、client secret 在啟動時拒絕。
+- 參考先經目錄規則檢查，再向行程環境（含 Kubernetes Secret 注入的環境變數）解析。缺欄位、解不出來的參考、未知 template type、未知 probe 名稱、重複 id 都讓行程起不來。
+- 設定物件的文字形式與錯誤訊息只含參考名稱，不含秘密值。
+
+### 21.3 監控模板與探測鏈（U45）
+
+模板定義該類型的預設探測通道、間隔與門檻。實例提供 `id`、`type`、`environment`、URL、憑證參考，並可覆寫通道、間隔與門檻。實例的 `type` 必須對到一個 template。
+
+探測只依這個順序，略過沒有設定的通道：
+
+1. endpoint
+2. MCP server
+3. API
+4. VM，經名為 Glove 的 SSH-tool MCP server 查該 VM 狀態
+
+規則：
+
+- 依序嘗試。只有目前通道本身失敗才換下一層。通道失敗包含逾時、連線被拒、DNS、TLS、認證失敗、MCP server 不可用。
+- 通道有回應且判定服務不健康：這是服務故障。立刻產生標準告警（`SERVICE_UNAVAILABLE`），不再探測更低的通道。
+- 已設定的通道全部失敗：服務判定為 down／unknown，產生一筆 `HEALTH_CHECK_FAILED` 告警。摘要帶每一層的失敗原因。
+- 較高通道失敗，但較低通道顯示服務健康：不開事故單。另發一則「監控通道降級」通知。去重鍵為 `channel-degraded:{instanceId}:{失敗通道}`，相同鍵不重複發送。
+- 第一個通道就健康：不開案、不通知。
+- 每次嘗試寫入 `probe_result`（通道、判定、原因）。有開案時，把同一段原因寫進 `work_activity` 與 `case_event`。
+- 事故進入既有標準告警與 fingerprint 去重，`source_id` 為 `probe`。重複探測只累計次數，不開第二張單。
+
+監控探測的 fallback 不是變更執行的換路。§12.1 的「MCP → API → VM gateway，執行失敗不自動換路徑」維持不變。Glove 只回答 VM 狀態；平台不保存 SSH 私鑰、不開 shell。
+
+MCP、API、endpoint 與 Glove 都在 port 後面。測試注入 fake，不打外網。正式行程預設的通道 adapter 回報「尚未設定」，因此在接上真實 client 之前不啟用週期探測（`platform.monitoring.enabled=false`）。
 
 ---
 
