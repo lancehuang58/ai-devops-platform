@@ -1,0 +1,65 @@
+# Monitored and integrated services. Secret fields are ${ENV} references only.
+# This file is loaded by the catalog loader, which rejects literals and unresolved names
+# before the process serves traffic. Do not put secret values in this file.
+platform:
+  services:
+    templates:
+      - id: gitlab-default
+        type: gitlab
+        probes: [endpoint, api]
+        interval: 60s
+        thresholds:
+          latency-ms: "2000"
+      - id: jenkins-default
+        type: jenkins
+        probes: [endpoint, api, vm]
+        interval: 60s
+        thresholds:
+          disk-percent: "90"
+      - id: vm-default
+        type: vm
+        probes: [vm]
+        interval: 120s
+    instances:
+      - id: gitlab-prod
+        type: gitlab
+        environment: prod
+        endpoint-url: https://gitlab.example.internal/-/health
+        api-url: https://gitlab.example.internal/api/v4/version
+        credential: ${GITLAB_TOKEN}
+      - id: jenkins-prod
+        type: jenkins
+        environment: prod
+        endpoint-url: https://jenkins.example.internal/login
+        api-url: https://jenkins.example.internal/api/json
+        glove-host: vm-jenkins-01
+        credential: ${JENKINS_TOKEN}
+      - id: vm-jenkins-01
+        type: vm
+        environment: prod
+        glove-host: vm-jenkins-01
+        credential: ${GLOVE_TOKEN}
+    integrations:
+      - id: jira
+        type: jira
+        base-url: https://jira.example.internal
+        credential: ${JIRA_TOKEN}
+      - id: teams
+        type: teams
+        base-url: https://teams.example.internal/webhook
+        credential: ${TEAMS_WEBHOOK}
+      - id: litellm
+        type: litellm
+        base-url: https://litellm.example.internal
+        credential: ${LITELLM_API_KEY}
+      - id: gitlab-oauth
+        type: gitlab-oauth
+        base-url: https://gitlab.example.internal
+        client-id: ${GITLAB_OAUTH_CLIENT_ID}
+        client-secret: ${GITLAB_OAUTH_CLIENT_SECRET}
+      - id: glove
+        type: mcp
+        base-url: http://glove.example.internal
+        credential: ${GLOVE_TOKEN}
+        settings:
+          name: Glove
