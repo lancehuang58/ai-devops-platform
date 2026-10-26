@@ -1,6 +1,7 @@
 package com.delta.dms.ops.aidevopsplatform.web.config;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.List;
@@ -13,6 +14,6 @@ class GitlabAuthoritiesTest {
                 new SimpleGrantedAuthority("ROLE_ADMIN"),
                 new SimpleGrantedAuthority("SCOPE_openid"),
                 new SimpleGrantedAuthority("ROLE_USER")));
-        assertThat(mapped).containsExactly(new SimpleGrantedAuthority("ROLE_USER"));
+        assertThat(mapped).extracting(GrantedAuthority::getAuthority).containsExactly("ROLE_USER");
     }
 }

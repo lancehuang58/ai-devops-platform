@@ -10,6 +10,7 @@ import com.delta.dms.ops.aidevopsplatform.model.alert.GroupStatus;
 import com.delta.dms.ops.aidevopsplatform.model.alert.IngestResult;
 import com.delta.dms.ops.aidevopsplatform.model.alert.PendingNotice;
 import com.delta.dms.ops.aidevopsplatform.model.alert.Severity;
+import com.delta.dms.ops.aidevopsplatform.model.monitoring.ChannelAttempt;
 import com.delta.dms.ops.aidevopsplatform.model.sync.DueSync;
 import com.delta.dms.ops.aidevopsplatform.model.sync.SyncRetryPolicy;
 import com.zaxxer.hikari.HikariConfig;
@@ -361,6 +362,58 @@ public final class JdbcPlatformStore {
 
     public void markNotificationSent(String dedupKey, Instant now) {
         jdbc.update("UPDATE notification_outbox SET status = 'SENT', updated_at = ? WHERE dedup_key = ?", ts(now), dedupKey);
+    }
+
+    public void saveProbeResults(String instanceId, List<ChannelAttempt> attempts, String disposition, Instant observedAt) {
+        for (var attempt : attempts) {
+            jdbc.update("""
+                    INSERT INTO probe_result (probe_result_id, instance_id, channel, verdict, reason, disposition, observed_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, UUID.randomUUID(), instanceId, attempt.channel().name(), attempt.verdict().name(),
+                    attempt.detail() == null ? "" : attempt.detail(), disposition, ts(observedAt));
+        }
+    }
+
+    public void enqueueNoticeOnce(String dedupKey, String kind, String body, Instant now) {
+        jdbc.update("""
+                INSERT INTO notification_outbox (notification_id, dedup_key, kind, body, status, updated_at)
+                VALUES (?, ?, ?, ?, 'PENDING', ?)
+                ON CONFLICT (dedup_key) DO NOTHING
+                """, UUID.randomUUID(), dedupKey, kind, body, ts(now));
+    }
+
+    public void recordProbeTrail(UUID itemId, String detail, Instant now) {
+        jdbc.update("""
+                INSERT INTO work_activity (activity_id, item_id, activity_kind, started_at, finished_at, detail)
+                VALUES (?, ?, 'INVESTIGATION', ?, ?, ?)
+                """, UUID.randomUUID(), itemId, ts(now), ts(now), detail);
+        var seq = jdbc.queryForObject("SELECT COALESCE(MAX(seq), 0) + 1 FROM case_event WHERE item_id = ?", Integer.class, itemId);
+        jdbc.update("""
+                INSERT INTO case_event (event_id, item_id, seq, event_type, detail, occurred_at, aggregate_version)
+                VALUES (?, ?, ?, 'PROBE_OBSERVED', ?, ?, 0)
+                """, UUID.randomUUID(), itemId, seq, detail, ts(now));
+    }
+
+    public int probeResultCount(String instanceId) {
+        return jdbc.queryForObject("SELECT count(*) FROM probe_result WHERE instance_id = ?", Integer.class, instanceId);
+    }
+
+    public String openWorkItemTitle(String resourceId) {
+        return jdbc.queryForObject("""
+                SELECT title FROM work_item WHERE primary_resource_id = ? AND status <> 'CLOSED' ORDER BY created_at LIMIT 1
+                """, String.class, resourceId);
+    }
+
+    public String activityDetail(String resourceId) {
+        return jdbc.queryForObject("""
+                SELECT COALESCE(string_agg(a.detail, E'\\n'), '') FROM work_activity a
+                JOIN work_item w ON w.item_id = a.item_id
+                WHERE w.primary_resource_id = ?
+                """, String.class, resourceId);
+    }
+
+    public String sourceType(String sourceId) {
+        return jdbc.queryForObject("SELECT source_type FROM monitor_source WHERE source_id = ?", String.class, sourceId);
     }
 
     private void ensureSource(CanonicalAlert alert) {

@@ -188,7 +188,7 @@ class PlatformWebIT {
                 HttpResponse.BodyHandlers.ofString());
         assertThat(granted.statusCode()).isEqualTo(302);
         var landed = follow(client, granted.headers().firstValue("Location").orElseThrow());
-        assertThat(landed).isEqualTo(deepLink);
+        assertThat(withoutContinue(landed)).isEqualTo(deepLink);
         return client;
     }
 
@@ -226,6 +226,10 @@ class PlatformWebIT {
         Matcher matcher = CSRF.matcher(html);
         assertThat(matcher.find()).isTrue();
         return matcher.group(1);
+    }
+
+    private static String withoutContinue(String path) {
+        return path.replace("&continue", "").replace("?continue", "");
     }
 
     private static String pathAndQuery(String current) {

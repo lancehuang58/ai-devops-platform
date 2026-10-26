@@ -9,19 +9,9 @@
 <body>
 <main class="card">
     <h1>AI DevOps 平台</h1>
-    <p class="notice">本地目錄登入。每個已登入的使用者看到相同的工作項目，沒有角色區隔。此環境不會呼叫 LDAP、Qwen 或商用模型。</p>
+    <p class="notice">使用公司 GitLab 登入。GitLab 本身已接上 LDAP。任何通過 GitLab 驗證的使用者看到相同的工作項目，沒有角色區隔。</p>
     <p th:if="${param.logout}" class="notice success">您已登出。</p>
-    <form th:action="@{/login}" method="post">
-        <div class="field">
-            <label for="username">帳號</label>
-            <input id="username" name="username" type="text" autocomplete="username" required autofocus>
-        </div>
-        <div class="field">
-            <label for="password">密碼</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" required>
-        </div>
-        <button type="submit">登入</button>
-    </form>
+    <p><a href="/oauth2/authorization/gitlab">以 GitLab 登入</a></p>
 </main>
 </body>
 </html>
