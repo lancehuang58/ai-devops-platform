@@ -4,10 +4,39 @@
 
 請從 **[文件索引](doc/README.md)** 開始閱讀。
 
-- 現行需求與系統分析：**0.40**；系統設計：**0.42**。
+- 對齊需求（`doc/specifications/aligned/aligned-requirements.md`，U1–U42）：**0.52**。舊版 SRS／SA／SD 草稿若與對齊需求衝突，以對齊需求為準。
 - 模型品質評估（MQ）及方案與工具測試（ST）：兩份獨立案例集，**0.5**。
 - 首批案例：Jenkins Job 內容查詢、單一 Job 設定備份與刪除。
 - 正式端點與實際測試資料尚待提供；規格中的預期結果不是實測通過證明。
+
+## v1 平台切片
+
+`platform` profile 提供第一個可運作的垂直切片。預設 profile 仍只有健康檢查；`demo` profile 仍是 H2／mock 的受管服務查詢與管理登入，兩者不要同時開啟。
+
+v1 包含：
+
+- 單一 `WorkItem` 狀態機、結案原因、工作類型與 `work_activity`／`case_event` 歷史；非法轉換會被拒絕。
+- Alertmanager webhook 與 generic API 收告警。相同 `source` + `sourceEventId` 冪等；fingerprint 為 fp-v1（不含 severity、source）。同一未結 fingerprint 只開一張單。跨資源關聯候選先通知、確認前不開票；單一成員超過 60 秒才開一般案件。
+- `work_task` 以 `FOR UPDATE SKIP LOCKED` 領取。`platform.workflow.workers` 可配置（建議 8）。等待狀態會寫回資料庫並釋放 worker。同一資源的補救鎖依 SD-18：執行中的租約過期不會自動放開。
+- Jira 同步 outbox 存在 PostgreSQL。暫時失敗最多 5 次重試後停止並留給人工。Jira、Teams、Qwen／LiteLLM、MCP／VM 都在 port 後面；v1 用假實作，不會打外網。
+- 已知解法與自動補救白名單在領域政策裡。沒有命中白名單就停在待核准；沒有人核准就維持 pending。結案草稿必須由使用者確認。
+- 表單登入不看角色，登入後每個人看到相同清單。清單可依系統、台北時間範圍、狀態篩選，每頁 20／50／100（預設 50），預設只顯示未結案。明細頁有時間軸。
+- 人工商用模型接管：下載遮罩後的 zip、寫回、以 `FORCED_BY_COMMERCIAL_MODEL` 結案。平台不會呼叫商用模型。
+
+本地執行需要 PostgreSQL 16：
+
+```bash
+docker run -d --name aidevops-pg -e POSTGRES_USER=aidevops -e POSTGRES_PASSWORD=aidevops -e POSTGRES_DB=aidevops -p 5432:5432 postgres:16-alpine
+./gradlew :web:bootRun --args='--spring.profiles.active=platform'
+```
+
+開啟 `http://127.0.0.1:8080/login`。預設帳號是 `ops`／`change-me`（`platform.auth.users.ops.password`），告警權杖是 `dev-alert-token`（標頭 `X-Alert-Token`）。請在正式環境改掉這兩個值。Alertmanager 路徑是 `POST /api/v1/alerts/alertmanager`，通用路徑是 `POST /api/v1/alerts/generic`。
+
+```bash
+./gradlew build
+```
+
+`build` 會跑全部單元測試、ArchUnit 與 web 整合測試。告警、佇列與畫面測試使用 Testcontainers，需要本機 Docker。
 
 ## 開發環境
 
