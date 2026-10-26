@@ -53,3 +53,12 @@ MQ 與 ST 分開計分。尚未取得公司 Qwen／MCP／Jenkins 端點及真實
 - 根目錄 `skills/`：五個可重用的架構與測試 Skills。
 
 - [受管服務查詢 Demo](design/managed-service-demo.md)：初始化與受管資源分離、完整六模組切片、API、mock 與正式化邊界。
+
+## 管理介面登入 Demo（2026-10-26 整合）
+
+- [管理介面第一階段設計](design/management-login-demo.md)：demo 表單登入、Session、登出與 API Basic 隔離。
+- [Qwen Flash 登入實作評估](testing/qwen-flash-login-evaluation.md)：2026-10-22 的歷史驗收與模型能力評估，保留當時已知問題。
+- [原始變更交接包](../qwen_changes.md)：基準 commit、完整 patch、OpenCode 全域設定及委派規則；其中「尚未 commit」描述的是原交付時間的狀態。
+- [本次整合驗證](testing/management-login-integration-2026-10-26.md)：2026-10-26 的獨立實測證據、範圍及待修事項。
+
+本次以原交付快照整合，CSRF matcher、fallback 公開路徑及測試斷言的已知缺口仍列為待修；不能把 demo 功能通過解讀為正式認證設計已驗收。全域 OpenCode 設定保留在交接文件中，並未成為應用程式 runtime 設定。

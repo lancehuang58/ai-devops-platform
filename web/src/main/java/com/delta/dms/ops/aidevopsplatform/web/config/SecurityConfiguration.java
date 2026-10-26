@@ -4,6 +4,7 @@ import com.delta.dms.ops.aidevopsplatform.service.port.out.DirectoryAuthenticati
 import com.delta.dms.ops.aidevopsplatform.service.port.out.RoleDirectory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.core.annotation.Order;
 import org.springframework.context.annotation.*;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -31,9 +32,13 @@ public class SecurityConfiguration {
             finally {Arrays.fill(password,'\0');}
         };
     }
-    @Bean SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager authenticationManager) throws Exception {
+    @Bean @Order(2) SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager authenticationManager) throws Exception {
         return http.authenticationManager(authenticationManager)
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/actuator/health").permitAll().anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> auth
+                        // UI 路徑由優先序較高的管理頁面鏈把關；/error 讓 ERROR dispatch 直達容器錯誤頁。
+                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
+                        .requestMatchers("/","/login","/login-failure","/home","/logout","/css/**","/error").permitAll()
+                        .requestMatchers("/actuator/health").permitAll().anyRequest().authenticated())
                 .httpBasic(basic -> { })
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();

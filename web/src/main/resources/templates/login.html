@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>登入｜AI DevOps 管理平台</title>
+    <link rel="stylesheet" th:href="@{/css/management.css}">
+</head>
+<body>
+<main class="card">
+    <h1>AI DevOps 管理平台</h1>
+    <p class="notice">測試模式：本環境使用固定的 demo 測試帳號（mock directory），並非正式 LDAP 驗證。</p>
+    <p th:if="${param.logout}" class="notice success">您已登出。</p>
+    <form th:action="@{/login}" method="post">
+        <div class="field">
+            <label for="username">帳號</label>
+            <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+        </div>
+        <div class="field">
+            <label for="password">密碼</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit">登入</button>
+    </form>
+</main>
+</body>
+</html>

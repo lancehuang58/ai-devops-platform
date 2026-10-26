@@ -78,4 +78,12 @@ curl -u normal:demo-normal http://127.0.0.1:8080/api/v1/managed-services/jenkins
 - [roles.yml](config/roles.yml)：帳號角色映射。
 - [完整流程與設定說明](doc/design/managed-service-demo.md)：API、環境變數、DB catalog 演進、事件與失敗語意。
 
+## 管理介面（demo）
+
+```bash
+./gradlew :web:bootRun --args='--spring.profiles.active=demo'
+```
+
+開啟 `http://127.0.0.1:8080/login`，使用上述 demo 測試帳號以表單登入；登入成功導向 `/home`，失敗到 `/login-failure`，`POST /logout` 登出回登入頁。管理頁面僅在 demo profile 提供，採 Spring Security 表單登入＋Session＋CSRF；`/api/**` 仍為 HTTP Basic，API 行為不受 UI Session 影響。設計與驗收條件見 [管理介面第一階段設計](doc/design/management-login-demo.md)。
+
 執行流程用 model／service／adapter／web；web 整合測試另外接入 MQ／ST，涵蓋全部六模組。尚未實作真連線 adapter，因此改 URL／key 不會自動接通，改成正式 provider mode 會拒絕啟動。
