@@ -13,7 +13,7 @@ class KnownFixPolicyTest {
     private final KnownFixPolicy policy = new KnownFixPolicy();
 
     @Test void publishedMatchOutsideTheWhitelistNeedsApproval() {
-        var decision = policy.decide(context(), List.of(solution(true)), List.of(), List.of());
+        var decision = policy.decide(context(), List.of(solution(true)), List.of(), List.of(), NOW);
         assertThat(decision.outcome()).isEqualTo(MatchOutcome.MATCHED);
         assertThat(decision.autoExecute()).isFalse();
         assertThat(decision.solutionRef()).isEqualTo("disk-cleanup@1");
@@ -21,12 +21,12 @@ class KnownFixPolicyTest {
 
     @Test void enabledWhitelistRuleAutoExecutesUntilTheGroupOrResourceCap() {
         var rule = new AutoRemediationRule("rule-1", "disk-cleanup", "1", "DISK_USAGE_HIGH", "PROD", "vm-1", true, 1, 3, Duration.ofHours(24));
-        var auto = policy.decide(context(), List.of(solution(true)), List.of(rule), List.of());
+        var auto = policy.decide(context(), List.of(solution(true)), List.of(rule), List.of(), NOW);
         assertThat(auto.autoExecute()).isTrue();
         assertThat(auto.authorizationSource()).isEqualTo("AUTO_REMEDIATION_RULE");
 
         var priorGroup = List.of(new RemediationRun("fp-1", "vm-1", NOW.minusSeconds(10)));
-        var blockedGroup = policy.decide(context(), List.of(solution(true)), List.of(rule), priorGroup);
+        var blockedGroup = policy.decide(context(), List.of(solution(true)), List.of(rule), priorGroup, NOW);
         assertThat(blockedGroup.autoExecute()).isFalse();
         assertThat(blockedGroup.outcome()).isEqualTo(MatchOutcome.MATCHED);
 
@@ -34,15 +34,15 @@ class KnownFixPolicyTest {
                 new RemediationRun("other-a", "vm-1", NOW.minus(Duration.ofHours(1))),
                 new RemediationRun("other-b", "vm-1", NOW.minus(Duration.ofHours(2))),
                 new RemediationRun("other-c", "vm-1", NOW.minus(Duration.ofHours(3))));
-        assertThat(policy.decide(context(), List.of(solution(true)), List.of(rule), runs).autoExecute()).isFalse();
+        assertThat(policy.decide(context(), List.of(solution(true)), List.of(rule), runs, NOW).autoExecute()).isFalse();
     }
 
     @Test void noMatchAndAmbiguousInputStayOutOfAutoExecution() {
-        assertThat(policy.decide(context(), List.of(), List.of(), List.of()).outcome()).isEqualTo(MatchOutcome.NO_MATCH);
-        var ambiguous = policy.decide(context().withNeedsInput(true), List.of(solution(true)), List.of(), List.of());
+        assertThat(policy.decide(context(), List.of(), List.of(), List.of(), NOW).outcome()).isEqualTo(MatchOutcome.NO_MATCH);
+        var ambiguous = policy.decide(context().withNeedsInput(true), List.of(solution(true)), List.of(), List.of(), NOW);
         assertThat(ambiguous.outcome()).isEqualTo(MatchOutcome.NEEDS_INPUT);
         assertThat(ambiguous.autoExecute()).isFalse();
-        assertThat(policy.decide(context(), List.of(solution(false)), List.of(), List.of()).outcome()).isEqualTo(MatchOutcome.NO_MATCH);
+        assertThat(policy.decide(context(), List.of(solution(false)), List.of(), List.of(), NOW).outcome()).isEqualTo(MatchOutcome.NO_MATCH);
     }
 
     private static MatchContext context() {
