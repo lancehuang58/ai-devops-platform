@@ -1,0 +1,741 @@
+# AI DevOps 智慧維運平台：已對齊需求（目標版）
+
+| 項目 | 內容 |
+|---|---|
+| 文件性質 | 對齊後的**目標需求**基準；SRS／SA／SD 0.50 依本文件改寫（舊 0.40～0.42 中衝突的條文已刪改，見附錄 A） |
+| 依據 | 儲存庫 `lancehuang58/ai-devops-platform` commit `2661434` 的 `doc/specifications/` 三份規格書，加上使用者 2026-10 的 34 項決策（見 §0） |
+| 搭配文件 | [`alert-event-and-dedup-design.md`](./alert-event-and-dedup-design.md)：監控事件格式、去重資料結構與流程 |
+| 版本 | 第三版（2026-10-26）：納入 U20～U34，所有待確認項目都已決定（§16）。第二版：納入 U14～U19；跨資源關聯改為「先整合成一則通知，確認是同一事件後才開單」 |
+| 狀態 | 已確認（2026-10-26，使用者回覆「全部如建議」）。SRS／SA／SD 已依附錄 A 刪改並升為 0.50（本機分支 `docs/aligned-requirements`） |
+| EIP 引用 | 《企業集成模式》中譯本，格式為「模式名（節號，書頁）」 |
+
+---
+
+## 0. 本次已確認的使用者決策
+
+| # | 決策 | 在本文落實的位置 |
+|---|---|---|
+| U1 | 既有監控（Prometheus、既有 API endpoint）列為一級事件來源 | §5 |
+| U2 | 特殊入口的監控之後陸續加入，需可擴充 | §5.1 監控來源／Connector 模型 |
+| U3 | 保留「使用者要求主動調查」入口 | §6 |
+| U4 | 服務故障後**繼續監控** endpoint，但**不持續發出警報**；要能偵測恢復 | §5.4、設計文件 B |
+| U5 | Jira 不穩：每次同步請求存 DB；失敗後補送最多 5 次，仍失敗即停止、轉人工 | §10 |
+| U6 | 偵測到的事件**自動建立 ticket**；不再逐案詢問是否建立紀錄 | §4、§10 |
+| U7 | 工作項目分為事故、需求、問題討論等；能用**一套狀態**就用一套 | §2、§3 |
+| U8 | 不再分「現行 v1／下一期」，直接寫目標流程：收集資料 → 調查是否有固定解法 → 否 → 提出解法 → 解法過審 → 套用解法 → 驗證 → 結案 | §4 |
+| U9 | 團隊預先定義自動修復案例；符合者可主動執行、不需核准；其他一律需核准 | §7 |
+| U10 | 核准沒人回應就維持 PENDING（不自動拒絕、不升級） | §8 |
+| U11 | 結案草稿要先給使用者看過並確認，才可結案 | §9 |
+| U12 | 先忽略「使用者自建 bot／多 bot」需求（不設 bot_id） | §1.3 |
+| U13 | 目前不限制權限、不區分角色；移除以角色為基礎的規則 | §12.2 |
+| U14 | Qwen 不可用時，只暫停 AI 步驟（分析、提案、摘要）；偵測、去重、開案、Jira、唯讀監控，以及已核准計畫與白名單自動修復**照常執行**（原 Q1） | §13.4 |
+| U15 | 緊急應變不另設「略過核准」通道：kill switch＋平台外手動處理後登錄 `MANUAL_ACTION`＋任何人可立即核准（原 Q2） | §8.4 |
+| U16 | 自動修復頻率：每個告警群組最多 1 次；同一資源 24 小時內最多 3 次；超過改走核准（原 Q5） | §7.1 |
+| U17 | 抖動：30 分鐘內 FIRING↔RESOLVED 切換 ≥ 3 次為 FLAPPING；抖動中要穩定 15 分鐘才判定恢復；重開窗 30 分鐘（原 Q13） | §5.4、設計文件 B §4.4～4.5 |
+| U18 | 跨資源關聯：**相關告警先整合成一則通知，不開單、不開 Jira；確認是同一事件後才開一張單**（原 Q12，與原建議不同） | §5.5、設計文件 B §5 |
+| U19 | 非功能需求採 §14 建議值（原 Q11） | §14 |
+| U20 | 純問答 INQUIRY 預設**不開 Jira**，只存平台；轉型為 INCIDENT 或勾選「需要追蹤」時才建 Jira。監控事件、INCIDENT、REQUIREMENT、DISCUSSION 一律開 Jira（原 Q3） | §6、§10 |
+| U21 | 待核准與待結案的提醒：每個工作日 09:30（Asia/Taipei）在原頻道提醒一次；不升級、不換人、不自動拒絕（原 Q4） | §8.2、§9 |
+| U22 | 申請人可以核准自己的提案；畫面標示「自行核准」並記錄（原 Q6） | §8.1 |
+| U23 | 故障期間維持原監控 interval；interval < 60 秒時放寬到 60 秒，判定恢復後回到原頻率（原 Q7） | §5.4 |
+| U24 | Jira 補送：首次失敗後**補送 5 次**（共 6 次呼叫）；間隔 1m／5m／15m／1h／4h＋20% jitter；不設總期限（原 Q8） | §10.3 |
+| U25 | 每案 Confluence 報告保留（D04），但降為可選目的地，`record_policy` 可關閉；知識以 GitLab 為準（原 Q9） | §10.5 |
+| U26 | 全域 kill switch：任何已驗證使用者可解除，需填理由；系統自動設定的 hold，須核心恢復 READY 後才可解除（原 Q10） | §13.2 |
+| U27 | 維護時段 `maintenance_window`：期間仍接收、去重並記錄，但不開案、不通知；結束時仍 FIRING 才開案。案件結案時群組仍 FIRING，預設建立 24 小時 FINGERPRINT 靜默（原 Q14） | §5.4、設計文件 B §4.7 |
+| U28 | raw evidence：所有已驗證使用者可在 Web 受控頁面查看，每次存取都稽核；Teams 與 Jira 只顯示安全投影；秘密在任何情況都不顯示（原 Q15） | §12.2 |
+| U29 | 同一未結群組嚴重度升高時通知一次並更新 Jira 優先級；降級不通知（原 Q16） | §5.4 |
+| U30 | 「同一事件」確認者：任何已驗證使用者可確認、拆分、移出；系統只在規則 `auto_confirm=true` 且證據 E1～E3 全部成立時自動確認；新規則預設 `auto_confirm=false`；系統不自動拆分（原 Q17） | §5.5、設計文件 B §5.5 |
+| U31 | 事件候選一直沒人確認：維持待確認、不開單；每 30 分鐘在原頻道提醒；Web 看板顯示等待時間（原 Q18；不採「30 分鐘後自動開單」替代方案） | §5.5 |
+| U32 | 關聯參數：hold 60 秒；收集窗 10 分鐘；影響範圍深度 2；通知更新節流 30 秒；提醒 30 分鐘；確認後新成員「可能相關」提示 10 分鐘（原 Q19） | 設計文件 B §5.11 |
+| U33 | 確認前所有成員都恢復：穩定超過重開窗（30 分鐘）後轉 `DISMISSED`，不開單、不開 Jira；Web 提供「補開單」（原 Q20） | §5.5 |
+| U34 | 首批關聯規則：`storage-deps`、`db-deps`，沿 SD-05 `DEPENDS_ON`，都先設 `auto_confirm=false`，運作穩定後再逐條開啟（原 Q21） | 設計文件 B §5.11 |
+
+---
+
+## 1. 目標與範圍
+
+### 1.1 目標
+
+1. 同時監控多個受管服務的狀態；異常被偵測時**自動開案、自動開 Jira ticket**，並自動展開調查。
+   - 例外：可能由同一個上游故障引起的一批告警，先整合成**一則通知**；確認是同一事件後才開**一張**單（U18，§5.5）。
+2. 以單一流程處理所有工作項目：收集資料 → 找固定解法 →（無）提出解法 → 過審 → 套用 → 驗證 → 結案草稿確認 → 結案。
+3. 團隊預先定義的「自動修復白名單」案例可免核准自動執行；其餘變更一律需人員核准。
+4. 每案的過程、證據、核准、執行與結果都可稽核；Jira 是可補送的外部投影，平台 DB 是權威紀錄。
+5. 結案後把可重用經驗沉澱為知識（GitLab MR 審查後發布），讓下一次能命中「固定解法」。
+
+### 1.2 受管服務範圍（沿用）
+
+PostgreSQL、MariaDB、Jenkins、GitLab、Jira、Confluence、Nexus、Harbor、Graylog、Rancher、VM 管理、Grafana 等。各服務能力（查詢、變更、健康檢查）**依方案逐步接入**；未接入的能力標示 disabled，不視為平台故障。
+
+### 1.3 不在範圍內（本版明確排除）
+
+| 項目 | 處理 |
+|---|---|
+| 使用者自建 bot、多 bot 協作、bot registry／bot_id | 忽略（U12）。架構維持單一對外 Bot＋中央流程；不為多 bot 預留資料欄位 |
+| 角色／權限分級（ADMIN／NORMAL_USER） | 本版不實作（U13）。只保留「已驗證身分」這一層 |
+| 依「現行 v1／下一期」分期的需求寫法 | 移除（U8）。交付排程另由開發計畫管理，不寫進需求 |
+| AI 自行發布正式知識或可執行方案 | 仍不允許。AI 只產草稿，人員審查後才發布 |
+
+---
+
+## 2. 工作項目類型
+
+所有工作項目共用同一張主表 `work_item`、同一套狀態機（§3），以 `item_type` 區分。
+
+| item_type | 中文 | 典型來源 | 會走到的流程階段 |
+|---|---|---|---|
+| `INCIDENT` | 事故：系統異常、設定錯誤、服務失效、效能異常、log 過大、儲存不回應等 | 監控事件自動開案（§5）；使用者回報；調查中確認有異常的 `INQUIRY` 轉型 | 全流程 |
+| `REQUIREMENT` | 需求：建立或修改系統需求，例如建 Jenkins pipeline、建 DB table、開測試 DB 帳號、計畫性變更 | 使用者在 Teams／Web 提出；標準申請表單 | 全流程。「固定解法」就是已發布的申請模板 |
+| `DISCUSSION` | 問題討論：需要分析、比較方案、做決策，但**不必然**要變更系統 | 使用者發起 | 收集資料 → 提出結論或建議 → 結案草稿 → 結案；需要變更時轉成 `REQUIREMENT` 或 `INCIDENT` 的子項 |
+| `INQUIRY` | 主動調查／查詢：使用者要求平台主動檢查某服務或回答問題 | 使用者發起（U3） | 收集資料 → 結案草稿 → 結案；發現異常時轉型為 `INCIDENT`，接續全流程 |
+
+規則：
+
+- 類型轉換（例如 `INQUIRY` → `INCIDENT`）保留同一個 work_item ID 與完整歷史，記錄 `ITEM_TYPE_CHANGED` 事件與理由；不另開新案。
+- 一個 work_item 可關聯多個資源（零到多個服務 labels），也可以有父子關係（`parent_item_id`），例如一個 DISCUSSION 衍生兩個 REQUIREMENT。
+- 「等」字預留：新類型只要能映射到同一狀態機，就加 enum 值即可，不新增狀態機。若某類型需要本狀態機以外的狀態，必須先回到需求確認。
+
+---
+
+## 3. 統一狀態機
+
+### 3.1 決策：工作項目只用一套狀態機
+
+**結論：** 事故、需求、問題討論、主動調查共用一套 `WorkItemStatus`。舊文件的 `RequestStatus`（SA-04.1）、`IncidentStatus`（SA-04.3）、`Case status`（SA-11.4）三套合併為一。
+
+**理由：**
+
+1. 四種類型走的是同一條業務主線（U8），差別只在「哪些階段會跳過」。這種差別用「依類型限制的轉換規則（guard）」就能表達，不需要多套狀態。
+2. 舊的三套狀態語意重疊（INVESTIGATING／ACTIVE、AWAITING_DECISION／WAITING_APPROVAL、RESOLVED／COMPLETED），而且分別掛在 `issue`、`work_request`、`case_record` 三張表上，導致同一件事有三個狀態來源，Jira 映射也要配三套。
+3. 合併後 Jira workflow 映射只需一套（§10.4），報表與看板也只看一個欄位。
+
+**保留為獨立生命週期的「非工作項目」實體**：它們描述的是工作項目底下的另一種東西，不是工作項目本身的狀態，所以不併入：
+
+| 實體 | 狀態 | 為何不併入 |
+|---|---|---|
+| 命令執行 `command_execution` | 沿用 SA-04.4 `CommandExecutionStatus` 與 SA-03.3 `CommandResult` | 一個工作項目可有多次執行；執行層有派送許可、逾時查核等專屬語意 |
+| 外部同步 `external_sync_request` | §10.2 `SyncStatus` | 一個工作項目在 Jira 與其他目的地各有多筆同步，且失敗與業務結果無關 |
+| 告警群組 `alert_group` | 見設計文件 B §3 | 描述監控訊號的開啟／恢復／抖動，可在工作項目結案前恢復 |
+| 事件候選 `incident_candidate` | HOLDING／AWAITING_CONFIRMATION／RELEASED_SINGLE／CONFIRMED／SPLIT／DISMISSED／ENDED（設計文件 B §5.3） | 是「開單之前」的實體：收集可能相關的告警群組、等待確認；確認後最多產生一個工作項目，本身不是工作項目的狀態（U7 仍只有一套工作項目狀態） |
+| 核准 `approval` | PENDING／APPROVED／REJECTED／WITHDRAWN／SUPERSEDED | 一個工作項目可有多個提案、多次核准 |
+| 知識草稿 | 沿用 DRAFT／REVIEW／PUBLISHED／EXPIRED／WITHDRAWN／SUPERSEDED | 知識的生命週期長於單一案件 |
+
+### 3.2 狀態定義
+
+| 狀態 | 中文 | 意義 |
+|---|---|---|
+| `NEW` | 已建立 | 已開案、取得編號、Jira 建單請求已寫入 DB（還沒送成也沒關係） |
+| `COLLECTING` | 收集資料 | 以已發布的唯讀能力（MCP → API → VM gateway）收集證據；需要模型時呼叫 Qwen 分析 |
+| `WAITING_INPUT` | 待補資料 | 必要資訊只有人能提供（需求欄位、討論結論、目標不明確）；等待中不派送任何變更 |
+| `MATCHING` | 查找固定解法 | 依證據比對已發布方案、申請模板、知識庫，結果為 MATCHED／NEEDS_INPUT／NO_MATCH |
+| `PROPOSING` | 提出解法 | 沒有固定解法時，AI 或人員擬定解法草稿；DISCUSSION 在此產出結論或建議 |
+| `PENDING_APPROVAL` | 待核准 | 解法（固定解法實例或新解法）等人核准；**沒人回應就一直停在這裡**（U10） |
+| `APPLYING` | 套用解法 | 依核准過的計畫，或自動修復白名單規則，經中央 Dispatcher 派送 CHANGE |
+| `VERIFYING` | 驗證 | 執行方案明列的 VERIFY，並視需要觀察一段時間（舊 OBSERVING 併入此狀態） |
+| `PENDING_HUMAN` | 待人工 | 失敗、PARTIAL、UNKNOWN、外部衝突，或系統無法自行判斷；平台不自動續跑 |
+| `CLOSURE_REVIEW` | 結案草稿待確認 | 平台產生結案草稿，等使用者看過並確認（U11）；沒人回應就一直停在這裡 |
+| `CLOSED` | 已結案 | 終態，必填 `closure_reason` |
+
+`closure_reason`：`RESOLVED`（已解決）、`SELF_RECOVERED`（自行恢復，未套用變更）、`FULFILLED`（需求完成）、`CONCLUDED`（討論或調查已有結論）、`FALSE_POSITIVE`（誤報）、`DUPLICATE`（重複，需填 `duplicate_of`）、`WITHDRAWN`（撤回或取消）、`WONT_FIX`（決定不處理）。舊的 `CANCELLED` 狀態改為 `CLOSED + WITHDRAWN`，同樣要經過結案確認。
+
+輔助欄位（不是狀態）：`blocked_reason`（例如 `LLM_UNAVAILABLE`、`KILL_SWITCH`、`RESOURCE_HOLD`、`JIRA_SYNC_PENDING`，用於顯示「卡在哪裡」，不改變狀態）、`signal_state`（關聯告警群組目前是 FIRING／RECOVERED／FLAPPING）、`record_completeness`（外部紀錄是否齊全）。
+
+### 3.3 狀態圖
+
+```mermaid
+stateDiagram-v2
+    [*] --> NEW: 監控事件自動開案／使用者建立
+    NEW --> COLLECTING: 系統自動
+    COLLECTING --> WAITING_INPUT: 缺人工資料
+    WAITING_INPUT --> COLLECTING: 使用者補齊
+    COLLECTING --> MATCHING: 證據足以比對
+    COLLECTING --> CLOSURE_REVIEW: INQUIRY／DISCUSSION 已有結論；或訊號恢復且未變更
+    MATCHING --> WAITING_INPUT: NEEDS_INPUT
+    MATCHING --> PENDING_APPROVAL: MATCHED，非白名單
+    MATCHING --> APPLYING: MATCHED，命中自動修復白名單
+    MATCHING --> PROPOSING: NO_MATCH
+    PROPOSING --> PENDING_APPROVAL: 解法草稿送審
+    PROPOSING --> CLOSURE_REVIEW: DISCUSSION 結論／決定不處理
+    PROPOSING --> COLLECTING: 需要更多證據
+    PENDING_APPROVAL --> APPLYING: 使用者核准
+    PENDING_APPROVAL --> PROPOSING: 使用者退回或要求修改
+    PENDING_APPROVAL --> CLOSURE_REVIEW: 使用者決定不處理或撤回
+    APPLYING --> VERIFYING: CHANGE 已送出且回應有效
+    APPLYING --> PENDING_HUMAN: FAILED／UNKNOWN／被擋下
+    VERIFYING --> CLOSURE_REVIEW: 驗證通過
+    VERIFYING --> PENDING_HUMAN: 驗證失敗或不明
+    PENDING_HUMAN --> COLLECTING: 人員要求重新調查
+    PENDING_HUMAN --> PROPOSING: 人員要求新解法
+    PENDING_HUMAN --> VERIFYING: 人員登錄已手動處理，要求驗證
+    PENDING_HUMAN --> CLOSURE_REVIEW: 人員決定結案
+    CLOSURE_REVIEW --> CLOSED: 使用者確認結案草稿
+    CLOSURE_REVIEW --> COLLECTING: 使用者退回，或同一告警在重開窗內再次觸發
+    CLOSED --> [*]
+```
+
+### 3.4 轉換表
+
+| # | 從 | 到 | 觸發者 | 條件與副作用 |
+|---|---|---|---|---|
+| T01 | — | NEW | 系統／使用者 | 監控事件經去重後為新群組且資源不在關聯範圍內；或事件候選被確認為同一事件、拆分、hold 到期只剩一個成員（設計文件 B §5）；或使用者建立；同一交易寫入 work_item、case_event、Jira 建單同步請求 |
+| T02 | NEW | COLLECTING | 系統 | 自動開始；**不需人工啟動調查**（取代 SA-04.3「自動發現先 PENDING_HUMAN」） |
+| T03 | COLLECTING | WAITING_INPUT | 系統 | 必要欄位、目標或範圍只有人能提供 |
+| T04 | WAITING_INPUT | COLLECTING | 使用者 | 補齊資料；一律重新驗證 |
+| T05 | COLLECTING | MATCHING | 系統 | 證據達到方案比對的最低要求 |
+| T06 | COLLECTING | CLOSURE_REVIEW | 系統 | INQUIRY／DISCUSSION 已產出答案或結論；或 INCIDENT 的訊號已恢復、平台未套用任何變更（草稿原因 `SELF_RECOVERED`，見 §5.4） |
+| T07 | MATCHING | WAITING_INPUT | 系統 | NEEDS_INPUT：多候選或缺參數 |
+| T08 | MATCHING | PENDING_APPROVAL | 系統 | MATCHED，且不符合任何啟用中的自動修復規則；產生計畫實例與預覽 |
+| T09 | MATCHING | APPLYING | 系統 | MATCHED **且**符合啟用中的自動修復規則（§7），並通過全部派送前檢查；授權來源記為 `AUTO_REMEDIATION_RULE` |
+| T10 | MATCHING | PROPOSING | 系統 | NO_MATCH |
+| T11 | PROPOSING | PENDING_APPROVAL | 系統／使用者 | 解法草稿完成：可執行部分必須能落到已發布命令（見 §8.3） |
+| T12 | PROPOSING | CLOSURE_REVIEW | 系統／使用者 | DISCUSSION 結論完成；或決定不處理（WONT_FIX） |
+| T13 | PROPOSING | COLLECTING | 系統／使用者 | 需要補充證據 |
+| T14 | PENDING_APPROVAL | APPLYING | 使用者 | 核准；伺服器重新驗證計畫 hash、資源基準、kill switch、resource_hold |
+| T15 | PENDING_APPROVAL | PROPOSING | 使用者 | 退回或要求修改；舊提案改為 SUPERSEDED |
+| T16 | PENDING_APPROVAL | CLOSURE_REVIEW | 使用者 | 不處理或撤回 |
+| — | PENDING_APPROVAL | （不變） | 無人回應 | **無逾時轉換**；只允許提醒（§8.2） |
+| T17 | APPLYING | VERIFYING | 系統 | CHANGE 已送出且回應有效 |
+| T18 | APPLYING | PENDING_HUMAN | 系統 | FAILED、PARTIAL、UNKNOWN、BLOCKED_*；CHANGE 不重送。D02 一次逾時查核在 APPLYING 內完成 |
+| T19 | VERIFYING | CLOSURE_REVIEW | 系統 | VERIFY 通過（含觀察期）；產生結案草稿 |
+| T20 | VERIFYING | PENDING_HUMAN | 系統 | 驗證失敗或結果不明 |
+| T21 | PENDING_HUMAN | COLLECTING | 使用者 | 要求重新調查；舊執行結果不覆寫 |
+| T22 | PENDING_HUMAN | PROPOSING | 使用者 | 要求新解法 |
+| T23 | PENDING_HUMAN | VERIFYING | 使用者 | 登錄已在平台外手動處理（`MANUAL_ACTION` 事件），要求平台驗證 |
+| T24 | PENDING_HUMAN | CLOSURE_REVIEW | 使用者 | 決定結案（含 FALSE_POSITIVE／DUPLICATE／WONT_FIX） |
+| T25 | CLOSURE_REVIEW | CLOSED | 使用者 | 確認結案草稿（可先修改草稿；確認時鎖定該版本） |
+| T26 | CLOSURE_REVIEW | COLLECTING | 使用者／系統 | 使用者退回；或關聯告警在重開窗內再次 FIRING（系統，見設計文件 B §4.5） |
+| — | 任何非終態 | （不變）＋`blocked_reason` | 系統 | kill switch、resource_hold、LLM 不可用時只標記卡住原因，不改狀態、不丟資料 |
+
+類型限制：
+
+| item_type | 不允許的狀態 |
+|---|---|
+| INCIDENT、REQUIREMENT | 無限制 |
+| DISCUSSION | `APPLYING`、`VERIFYING`（需要變更時另開子項） |
+| INQUIRY | `MATCHING` 以後的狀態；需要時先轉型為 INCIDENT（T05 前執行 `ITEM_TYPE_CHANGED`） |
+
+所有轉換以 `row_version` 做樂觀鎖；同一 work_item 的轉換序列化；每次轉換寫一筆 `case_event`（只追加，`event_id` 冪等）。這相當於 EIP 的過程管理器（7.12，p.219）：由 work_item 保存流程狀態，決定下一步。
+
+### 3.5 資料表合併
+
+| 舊表（文件位置） | 新表 | 處理 |
+|---|---|---|
+| `issue`（SD-04.1）、`work_request`（SD-04.1）、`case_record`（SD-14.2） | `work_item` | 合併。欄位：`item_id`（UUID）、`item_no`（單一序列，例如 `OPS-0000001234`；類型不寫進編號，因為類型可以轉換）、`item_type`、`status`、`closure_reason`、`title`、`requestor_principal_id`、`source_kind`（MONITOR／USER／SCHEDULE）、`environment`、`resource_refs`、`parent_item_id`、`duplicate_of`、`blocked_reason`、`signal_state`、`record_completeness`、`current_report_version`、`created_at`、`row_version` |
+| `case_work`（SD-14.2） | `work_activity` | 保留為工作項目底下的活動紀錄（調查、比對、提案、套用），`mode` 改為 `activity_kind`；**不再有自己的狀態機**，只有 started／finished 與結果 |
+| `issue_label` | `work_item_label` | 改名 |
+| `state_transition`（SD-04.1）中屬於工作項目的部分 | `case_event`（type=`STATE_CHANGED`） | 工作項目狀態歷史只記在 case_event；`state_transition` 只保留給執行層實體 |
+| `admin_authorization`（SD-04.1）、`approval`（SD-14.2） | `approval` | 合併；去掉角色欄位；`authorization_source` 改為 `USER_APPROVAL`／`AUTO_REMEDIATION_RULE`／`APPROVED_SCHEDULE`／`READ_ONLY`／`SYSTEM_RECORD_POLICY`／`TIMEOUT_CHECK` |
+| `publication_decision`（SD-04.1） | — | 刪除，歷史資料轉成 case_event 備查（U6：不再逐案同意） |
+| `external_sync_request`（SD-04.1）、`record_outbox`／`record_attempt`／`record_obligation`（SD-14.7） | `external_sync_request`＋`external_sync_attempt`＋`external_mapping` | 合併成一套同步機制（§10） |
+| `role_config`／`principal_role`（SD-04.1、SD-03.2） | `principal`（只有身分，沒有角色） | 角色欄位移除（U13） |
+| `investigation`（SD-04.1） | `work_activity`（kind=INVESTIGATION）＋`evidence_record` | 合併 |
+| 新增 | `alert_delivery`、`alert_receipt`、`alert_group`、`alert_group_event`、`work_item_alert_group`、`notification_outbox`、`alert_silence`、`correlation_rule`、`correlation_scope`、`incident_candidate`、`incident_candidate_key`、`incident_candidate_member`、`notification_message`、`monitor_check_state`、`monitor_source`、`monitor_check`、`auto_remediation_rule`、`execution_hold`（擴充 manual 欄位）、`closure_draft` | 見 §5、§7、§9、§13 與設計文件 B |
+
+沿用、不改：`solution_definition`、`execution_plan`、`plan_step`、`command_definition`、`command_execution`、`execution_attempt`、`execution_outbox`、`execution_resolution`、`timeout_check`、`evidence_record`、`resource_catalog` 與 SD-05 的五組資源表、`resource_hold`、`app_core_health`、`health_profile`／`health_sample`、知識相關表。
+
+---
+
+## 4. 端到端流程
+
+```mermaid
+flowchart TD
+    S1["監控事件<br/>Prometheus／API probe／未來特殊來源"] --> N["正規化＋冪等接收＋去重<br/>（設計文件 B）"]
+    S2["使用者：主動調查／需求／討論"] --> V["身分驗證、去重"]
+    N -->|新告警群組，資源不在關聯範圍| C["開案 work_item NEW<br/>同一交易寫入 Jira 建單請求"]
+    N -->|新告警群組，資源在關聯範圍| CA["事件候選：整合成一則通知<br/>不開單、不開 Jira"]
+    CA -->|確認同一事件（使用者或規則）| C
+    CA -->|拆分／hold 到期只剩一個| C
+    CA -->|確認前全部恢復| DS["DISMISSED：不開單"]
+    N -->|已有未結群組| A["只累計次數，不重複告警"]
+    V --> C
+    C --> COL["收集資料 COLLECTING<br/>唯讀工具 MCP→API→VM gateway"]
+    COL --> M{"有固定解法？<br/>MATCHING"}
+    M -->|是，且命中自動修復白名單| AP["套用解法 APPLYING"]
+    M -->|是，非白名單| PA["待核准 PENDING_APPROVAL<br/>無回應就維持 PENDING"]
+    M -->|否| PR["提出解法 PROPOSING"]
+    PR --> PA
+    PA -->|核准| AP
+    AP --> VE["驗證 VERIFYING"]
+    VE -->|通過| CR["結案草稿 CLOSURE_REVIEW<br/>使用者確認"]
+    VE -->|失敗／不明| PH["待人工 PENDING_HUMAN"]
+    AP -->|失敗／不明| PH
+    CR -->|確認| CL["結案 CLOSED"]
+    CL --> K["知識草稿 → GitLab MR 審查 → 發布"]
+    C -.-> J["Jira 同步請求（DB 持久化，可補送 5 次）"]
+    CL -.-> J
+```
+
+| 步驟 | 使用者流程用語 | 平台行為 | 主要約束 |
+|---|---|---|---|
+| 1 | 偵測／受理 | 監控事件自動開案；關聯範圍內的告警先整合成一則通知，確認是同一事件後開一案（§5.5）；使用者從 Teams／Web 建立 | 開案與 Jira 建單請求在同一 DB 交易（事務性客戶端 10.4，p.356）；Jira 失敗不阻擋開案；候選確認前不開 Jira、不自動修復 |
+| 2 | 收集資料 | 自動調查，先強制查詢知識庫，再依範圍與預算呼叫唯讀工具 | 只用已發布的 QUERY；不直接 SSH；外部內容一律當資料，不當指令 |
+| 3 | 調查是否有固定解法 | 比對已發布 solution／模板／知識 | 比對依據是可檢查的條件，不是模型自述的信心 |
+| 4 | 否 → 提出解法 | AI 擬定解法草稿與理由；人員可修改 | 可執行步驟只能引用已發布命令；沒有對應命令時，只能是人工步驟說明 |
+| 5 | 解法過審 | 使用者核准完整計畫（一次核准全部步驟） | 無回應時維持 PENDING；核准綁定計畫 hash |
+| 5′ | 白名單 | 命中自動修復規則時跳過核准 | 仍受 kill switch、resource_hold、單一派送、VERIFY 約束 |
+| 6 | 套用解法 | 中央 Dispatcher 派送，每個 CHANGE 只送一次 | 失敗不重送、不回滾、不換通道；只有 D02 一次逾時唯讀查核 |
+| 7 | 驗證 | 依方案的 VERIFY 判定效果 | CHANGE 被接受不等於成功 |
+| 8 | 結案 | 產生結案草稿，使用者確認後結案；更新 Jira 與知識庫 | 草稿確認前不結案 |
+
+---
+
+## 5. 監控來源與告警
+
+### 5.1 監控來源／Connector 模型（U1、U2）
+
+監控來源一律以「通道適配器」（4.8，p.85）接入，轉成平台的**標準告警事件**（規範數據模型 8.7，p.249）。新增來源只需新增 adapter 與 normalizer（規範器 8.6，p.247），不改去重或開案邏輯。
+
+| source_type | 接入方式 | 狀態 |
+|---|---|---|
+| `PROMETHEUS_ALERTMANAGER` | Alertmanager webhook（push）→ 平台接收 endpoint | 一級來源 |
+| `PROMETHEUS_QUERY` | 平台定期執行 PromQL（pull），例如補查或沒有 alert rule 的指標 | 一級來源 |
+| `HTTP_ENDPOINT_PROBE` | 平台定期呼叫既有 API／health endpoint，依 predicate 判定 | 一級來源 |
+| `PLATFORM_HEALTH_PROFILE` | 沿用 SD-08.5 health profile 的服務健康檢查 | 沿用 |
+| `CUSTOM_CONNECTOR` | 特殊入口（例如 Graylog 查詢、Jenkins queue、GitLab runner、VM gateway 唯讀 action），日後逐一加入 | 擴充點 |
+| `USER_REPORT` | 使用者回報的異常，也走同一格式，方便和監控事件合併 | 一級來源 |
+
+`monitor_source`（每個來源實例一筆）：`source_id`、`source_type`、`display_name`、`endpoint_ref`、`credential_ref`、`auth_scheme`、`normalizer_ref@version`、`resource_mapping_rule_ref`、`enabled`、`config_version`、`health_status`。
+
+`monitor_check`（pull 類型的每一項檢查）：`check_id`、`source_id`、`resource_id`、`symptom_type`、`probe_spec`（HTTP method／path template／timeout，或 PromQL）、`success_predicate`、`interval_seconds`、`timeout_seconds`、`fail_threshold`（連續失敗幾次才 FIRING）、`recover_threshold`（連續成功幾次才 RECOVERED）、`severity`、`enabled`、`version`。
+
+要求：
+
+- 一個來源掛掉（例如 Alertmanager 失聯或 webhook 認證失敗）時，產生平台自身的 `MONITOR_SOURCE_UNAVAILABLE` 事件，同樣走去重，不阻擋其他來源。
+- 「監控來源本身健康」和「受管服務健康」分開記錄，不可把來源失聯當成受管服務故障。
+- 新增來源、check、mapping rule 都要版本化、可停用；未啟用不計入任何門檻。
+
+### 5.2 標準告警事件
+
+欄位、JSON Schema、Prometheus 與 API probe 範例、Alertmanager 欄位對照，見設計文件 B §1。
+
+### 5.3 去重與開案
+
+- 依 `(source_id, source_event_id)` 冪等接收（冪等接收者 10.11，p.389），重送只回原結果。
+- 依 `fingerprint` 聚合到告警群組（聚合器 7.7，p.187）。同一 fingerprint 同時只有一個未結群組。
+- **新群組，資源不在關聯範圍 → 自動開案（INCIDENT）＋ Jira 建單請求**（U6）。
+- **新群組，資源在關聯範圍 → 先進事件候選，整合成一則通知；確認後才開案**（U18，§5.5）。
+- **已有未結群組 → 累計 `occurrence_count`、更新 `last_seen_at`，不再開案、不再告警**（U4）。
+- 併發下以 DB 唯一約束與 upsert 確保「一個 fingerprint 只開一案」。
+- 併發下也保證「一個事件候選最多開一案」、「一個告警群組只屬於一個案件」（設計文件 B §4.8、§5.6；PostgreSQL 實測見 B §7.1）。
+
+### 5.4 故障後持續監控、不持續告警（U4）
+
+1. 群組 FIRING 期間，**pull 類型 check 照常執行**（interval < 60 秒時，故障期間放寬到 60 秒，U23），結果寫入 `health_sample`，並累計到 `alert_group.occurrence_count`；**不發通知、不開新案、不重複寫 Jira 評論**。
+2. Alertmanager 的 `repeat_interval` 重送也只累計次數。
+3. 偵測到恢復（Alertmanager `resolved`，或 probe 連續成功達 `recover_threshold`）時，群組進入 RECOVERED，**只通知一次**，並在案件寫入 `SIGNAL_RECOVERED` 事件。
+4. 恢復對案件的影響：
+   - 案件還在 COLLECTING／MATCHING／PROPOSING／WAITING_INPUT（尚未變更）：自動產生 `SELF_RECOVERED` 結案草稿並轉 CLOSURE_REVIEW（T06）。仍需使用者確認（U11）。
+   - 案件在 PENDING_APPROVAL：提案保持 PENDING，案件加註「訊號已恢復」，由使用者決定撤回或繼續。**不自動撤回**（U10）。
+   - 案件在 APPLYING／VERIFYING：恢復訊號只當證據，不中斷執行，也不代替 VERIFY。
+5. 抖動（flapping）與重開窗（U17）：30 分鐘內 FIRING↔RESOLVED 切換 ≥ 3 次就標為 FLAPPING，期間不再發恢復／重發通知；抖動中的群組要連續穩定 15 分鐘才判定恢復（未抖動時收到 RESOLVED 就判定恢復）；恢復後 30 分鐘內再 FIRING，重開原群組與原案件，不開新案。細節見設計文件 B §4.4、§4.5。
+6. 嚴重度升高（例如 WARNING → CRITICAL）時通知一次並更新 Jira 優先級；降級不通知（U29）。
+7. 維護時段 `maintenance_window`：期間仍接收、去重並記錄，但不開案、不通知；結束時仍 FIRING 才開案（U27）。
+8. 取代舊規則「目標故障後該資源的業務檢查／排程停止」（SD-08.4、SA-07.2）：**監控用的唯讀檢查不停**；停止的是**變更類工作**（resource_hold、execution_hold 照舊）。
+
+### 5.5 跨資源關聯：先整合通知，確認後才開單（U18）
+
+情境：一台儲存故障，掛在上面的 VM 與服務同時告警。如果每個告警各開一張單，會一次湧出幾十張 Jira；但如果系統自己猜「這些是同一件事」直接合併，猜錯就會漏處理。因此：
+
+1. **整合成一則通知，不開單。** 新告警群組的資源若落在某條關聯規則的影響範圍（`correlation_scope`），不直接開案，而是加入同一個「事件候選」（`incident_candidate`，以「規則＋環境＋上游資源」為鍵）。第一個成員到時**立刻**發出一則 Teams 通知；之後的成員只更新同一則通知（成員數、清單、上游狀態），不另發訊息，最多每 30 秒更新一次。
+2. **單一告警不被延誤太久。** 候選有 60 秒 hold；hold 到期時如果只有一個成員，就照一般流程開案（`RELEASED_SINGLE`）。之後若有第二個成員加入，回到「待確認」，不另開第二張單。
+3. **確認是同一事件後才開一張單。** 兩個以上成員時，候選進入「待確認」。確認後在同一交易開**一個**案件與**一張** Jira，所有成員連到這個案件；確認後才到的相關告警自動併入（通知上可「移出」）。
+4. **誰可以確認。** 任何使用者在通知或 Web 上按「確認同一事件」。系統只有在規則設定 `auto_confirm=true`，且證據成立（上游資源本身也在告警、其他成員都在它的影響範圍、時間相近）時才自動確認。細節見 U30。
+5. **不是同一件事。** 使用者可「拆分」（挑出部分成員各自開案）或「全部獨立」（每個成員各開一案）。系統不會自動拆分。
+6. **確認前全部恢復。** 所有成員恢復並穩定超過重開窗，候選轉 `DISMISSED`，不開單、不開 Jira，只留紀錄；Web 上可「補開單」（U33）。
+7. **確認前的限制。** 候選還沒變成案件之前，不會自動修復、不會開 Jira；AI 可以先做唯讀的初步調查，結果附在通知上。
+8. **一直沒人確認。** 維持待確認、每 30 分鐘在原頻道提醒，不自動開單（U31）。
+9. 候選是「開單前」的實體，不是工作項目的新狀態，所以 U7 的單一狀態機不變。資料結構、併發控制與實測結果見設計文件 B §5、§7.1。EIP：聚合器（7.7，p.187）、關聯標識符（5.7，p.107）、過程管理器（7.12，p.219）。
+
+---
+
+## 6. 使用者主動調查（U3）
+
+- 入口：Teams 對話、Web。使用者可指定服務、環境、時間窗與問題描述。
+- 建立 `INQUIRY` 工作項目，走 COLLECTING；預設**只存平台、不開 Jira**。轉型為 INCIDENT，或使用者勾選「需要追蹤」時，才產生 Jira 建單同步請求（U20）。
+- 調查中發現異常時，系統建議轉型為 INCIDENT，並產生 `USER_REPORT` 標準告警事件走去重：
+  - 若已有相同 fingerprint 的未結群組，INQUIRY 標記 `DUPLICATE` 並連到既有 INCIDENT（仍要結案草稿確認）。
+  - 否則 INQUIRY 轉型為 INCIDENT，保留同一 ID。
+- 調查可用的工具、範圍與預算沿用 SA-10 ADAPTIVE_READ／COMMON_QUERY_SAFE；只能唯讀。
+
+---
+
+## 7. 自動修復白名單（U9）
+
+### 7.1 規則
+
+團隊預先定義 `auto_remediation_rule`。只有同時符合以下條件時才可免核准執行：
+
+1. 案件在 MATCHING 得到 `MATCHED`，命中的 `solution_id@version` 已發布且未停用；
+2. 啟用中的規則條件全部符合：`source_type`、`symptom_type`、resource selector（資源類型、環境、指定資源）、severity 範圍、必要證據謂詞；
+3. 規則的頻率限制未超過（U16）：每個告警群組最多自動執行 1 次；同一資源 24 小時內最多 3 次；超過就改走核准；
+4. 全域與目標 kill switch（§13.2）未啟動；`resource_hold` 無衝突；核心健康 READY；
+5. 派送前檢查（基準狀態、互斥、單一派送許可）全部通過。
+
+`auto_remediation_rule` 欄位：`rule_id`、`version`、`name`、`solution_ref`（`solution_id@version`）、`match`（上述條件，JSON）、`environments`、`max_runs_per_group`（預設 1）、`max_runs_per_resource_window`（預設 3）、`window_seconds`（預設 86400）、`cooldown_seconds`、`require_verify=true`（固定，不可關）、`enabled`、`published_by`、`published_at`、`valid_until`、`change_note`。
+
+### 7.2 約束
+
+- 未列入白名單的情況，**一律需要核准**，包括：白名單方案用在不同環境、規則已過期，或超過頻率限制。
+- 自動執行失敗、PARTIAL、UNKNOWN → PENDING_HUMAN，**不重試、不換方案、不升級成其他自動規則**。
+- 同一告警群組在未結期間重複觸發，**不會再次自動修復**（`max_runs_per_group`）。
+- 自動執行完成後照常 VERIFY → CLOSURE_REVIEW，結案仍要使用者確認（U11）。
+- 規則的新增、修改、停用都要版本化並留下 case_event／audit；修改後舊版本不再命中。
+- 取代舊規則：SA-03.3「故障事件自動修復停用」、SA-04.5 `APPROVED_RULE`「不含故障自動修復」、SA-07.6、SA-08.7、SA-08.11「自動告警命中已知方案也不自動修復」。
+
+---
+
+## 8. 核准
+
+### 8.1 誰可以核准
+
+- 目前不分角色（U13）：任何已通過 LDAP 驗證並完成 Teams 帳號連結的使用者都可以核准。
+- 仍保存核准者身分、時間、核准的計畫版本與 hash、看到的預覽內容。
+- 申請人可以核准自己的提案；畫面標示「自行核准」，並記錄在 approval 與 case_event（U22）。
+
+### 8.2 PENDING 行為（U10）
+
+- 核准請求沒人回應時，案件停在 `PENDING_APPROVAL`，approval 維持 `PENDING`：**不自動拒絕、不逾時失效、不升級**。
+- 提醒：每個工作日 09:30（Asia/Taipei）在原頻道提醒一次；Web 看板顯示等待時間（U21）。
+- 取代 SD-14.3「核准預設 10 分鐘」。但「核准有效期」改由**核准當下的重新驗證**確保安全：
+  - 核准時重新讀取 canonical plan、比對 hash、重新取得目標基準狀態；基準已變就轉 `BLOCKED_STATE_CHANGED`，提案改為 SUPERSEDED，回 PROPOSING。
+  - 方案或命令版本已停用，核准也無效。
+- 核准後應立即排入派送；核准與派送之間仍做 SA-02.5 的全部派送前檢查。
+
+### 8.3 解法內容限制（沿用）
+
+- 一次核准涵蓋整份計畫的所有子命令與預定分支；不另設逐步核准。
+- AI 提出的新解法：可執行步驟只能引用已發布命令與參數 schema；需要未發布命令的步驟只能標示為人工步驟，由人員在平台外執行並登錄 `MANUAL_ACTION`。
+- 核准後修改目標或參數，產生新版本並重新核准；修改步驟、順序、分支或驗證規則，需先發布新的方案定義。
+- 新解法若要變成「固定解法」，走知識／方案審查發布流程（§11），不能因單次核准而自動固化。
+
+### 8.4 緊急應變（U15）
+
+不另設「略過核准」的緊急通道。緊急時的做法：
+
+1. **先止血**：任何人都可以啟動全域或目標 kill switch（§13.2），阻擋後續的自動修復與派送。
+2. **平台外手動處理**：人員直接處理後，回平台登錄 `MANUAL_ACTION`（做了什麼、何時、在哪個資源）；案件從 PENDING_HUMAN 進入 VERIFYING（T23）。平台負責驗證、紀錄、Jira 更新與結案草稿。
+3. **需要平台執行時**：照一般流程提案，任何已驗證使用者都可以立即核准（U13 不分角色，所以不會卡在找不到 ADMIN）。
+
+---
+
+## 9. 結案草稿（U11）
+
+- 進入 CLOSURE_REVIEW 時，平台產生 `closure_draft`：`draft_id`、`item_id`、`version`、摘要（現象、影響範圍與時間、根因或「根因未確認」、已執行的處置與結果、驗證證據、剩餘風險、後續建議）、建議的 `closure_reason`、建議的知識沉澱項目、`evidence_refs`、產生者（AI 或模板）、`created_at`。
+- 草稿以 REPORT_SAFE 投影呈現，不含秘密與 raw。
+- 使用者可以：**確認**（T25，鎖定該版本並結案）、**修改後確認**（產生新版本後確認）、**退回**（T26，回 COLLECTING 並寫理由）。
+- 沒人確認時一直停在 CLOSURE_REVIEW（與 §8.2 一致，可提醒）。
+- LLM 不可用時，以固定模板只用已存證據產生草稿，不阻擋結案確認。
+- 結案後：觸發 Jira 狀態同步請求；若草稿勾選知識沉澱，就建立知識草稿（§11）。
+
+---
+
+## 10. Jira 同步與補送（U5、U6）
+
+### 10.1 原則
+
+- 平台 DB 是權威；Jira 是投影。**每案自動建立 Jira ticket**，不再逐案詢問（移除 `publication_decision`）。
+- 每次需要寫 Jira（建單、更新內容、狀態轉換、評論）都先在同一業務交易寫入一筆 `external_sync_request`（保證交付；與 EIP 事務性客戶端 10.4，p.356 的作法一致），再由獨立 `RecordSyncWorker` 送出。
+- Jira 故障**不阻擋**開案、調查、核准與維運執行；只影響 `record_completeness`。
+- 補送只重建安全投影，**不呼叫模型、不呼叫維運 Dispatcher**。
+
+### 10.2 同步請求狀態
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> SENDING: worker 領取（單一 owner）
+    SENDING --> SYNCED: 回應可信，讀回驗證
+    SENDING --> RETRY_WAIT: 可證明未生效的暫時故障
+    SENDING --> RECONCILING: 結果不明（timeout、不確定的 5xx）
+    RECONCILING --> SYNCED: 以 case marker 找到相符紀錄
+    RECONCILING --> RETRY_WAIT: 可靠證明未建立
+    RECONCILING --> PENDING_HUMAN: 無法判定
+    RETRY_WAIT --> PENDING: 未達補送上限
+    RETRY_WAIT --> PENDING_HUMAN: 已補送 5 次仍失敗
+    SENDING --> PENDING_HUMAN: 401／403、schema 錯誤、內容或狀態衝突
+    PENDING --> SUPERSEDED: 尚未送出且已被較新版本取代
+    SYNCED --> [*]
+    PENDING_HUMAN --> PENDING: 人員修正後手動重送（補送計數歸零並記錄）
+```
+
+### 10.3 補送規則
+
+| 項目 | 規則 |
+|---|---|
+| 補送上限 | 首次送出失敗後，**最多自動補送 5 次**（總共最多 6 次呼叫）；仍失敗就停止，轉 PENDING_HUMAN 並通知一次（U5、U24）；不設總期限 |
+| 間隔 | 預設 1 分、5 分、15 分、1 小時、4 小時，加 20% jitter；有 `Retry-After` 時優先遵守（U24） |
+| 不重複建單 | 每筆建單帶穩定 case marker（例如 Jira label 或欄位 `ops-item-<item_id>`）；結果不明時先 RECONCILING 查詢，不直接再 POST。查核每輪最多 1 次，不計入 5 次補送 |
+| 順序 | 同一 work_item＋目的地依序處理；尚未送出的舊內容更新可合併成最新版本，但狀態轉換不可跳過 |
+| 不可自動補送 | 401／403、欄位 schema 錯誤、Jira 端被人改成未預期狀態、版本衝突 → 直接 PENDING_HUMAN |
+| 持久化 | `external_sync_request`：`request_id`、`item_id`、`destination`（JIRA／其他）、`operation`（CREATE／UPDATE_FIELDS／TRANSITION／COMMENT）、`payload_hash`、`desired_version`、`status`、`retry_count`、`max_retries=5`、`next_attempt_at`、`last_error_class`、`dedup_key` UNIQUE、`row_version`；每次呼叫寫一筆 `external_sync_attempt` |
+| 重啟 | worker 重啟後可恢復 SENDING 中的請求，先 RECONCILING 再決定；與維運 `execution_outbox` 不同（維運命令重啟後不重播） |
+| 顯示 | UI 分開顯示業務結果與 Jira 同步狀態；Jira 未同步不影響「已驗證成功」的事實 |
+
+這解決舊文件互相矛盾的地方：D03／SA-04.6／SD-14.7 允許補送，SA-08.4／SD-04.1／SD-04.3 卻寫「無自動重試、一律人工」。以本節為準。
+
+### 10.4 Jira 狀態映射
+
+單一狀態機只需一套映射（建議語意；實際 transition ID 依公司 workflow 配置，未配置就不轉換）：
+
+| WorkItemStatus | Jira 建議狀態 |
+|---|---|
+| NEW、COLLECTING、MATCHING | 待處理／調查中 |
+| WAITING_INPUT | 待補資料 |
+| PROPOSING、PENDING_APPROVAL | 待審核 |
+| APPLYING、VERIFYING | 處理中 |
+| PENDING_HUMAN | 待人工 |
+| CLOSURE_REVIEW | 待結案確認 |
+| CLOSED | 已結案（resolution 對應 closure_reason） |
+
+Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維運。
+
+### 10.5 Confluence／文件平台
+
+沿用 D04「每案一份報告」的做法，改用同一套 `external_sync_request` 機制與同一補送上限。Confluence 報告是可選目的地：`record_policy` 可以關閉；知識一律以 GitLab 為準（U25）。
+
+---
+
+## 11. 知識庫
+
+沿用並保留：
+
+- 三種來源分開：`FORMAL_KNOWLEDGE`（GitLab repo，經 MR 審查發布）、`HISTORICAL_CASE`（平台 DB 案件）、`LIVE_OBSERVATION`（工具即時資料）。
+- 首次呼叫診斷模型前，**程式強制**先做知識檢索並保存檢索紀錄；模型不能決定略過。
+- AI 只能建立草稿或 MR；merge／發布由人員執行。含可執行能力的知識，要先完成方案測試（ST）並發布 solution。
+- 狀態 DRAFT／REVIEW／PUBLISHED／EXPIRED／WITHDRAWN／SUPERSEDED；撤回或到期後，依賴它的提案與自動修復規則不再命中。
+- 結案後的沉澱：結案草稿勾選的項目建立知識草稿，關聯 `source_item_ids` 與證據；相似知識查重後以新版本更新，不重複建立。
+- 新解法經過實際驗證並發布為 solution 後，可再由團隊決定是否加入自動修復白名單（§7）。發布 solution 與加入白名單是兩個分開的動作。
+
+---
+
+## 12. 安全
+
+### 12.1 保留的安全邊界
+
+| 邊界 | 要求 |
+|---|---|
+| 接入路由 | 每個能力發布時固定一條路徑：MCP → API → 公司 VM gateway；執行失敗**不自動換路徑** |
+| SSH | Bot／Qwen 不直接 SSH、不持有 SSH 私鑰、不接受任意 shell；只呼叫 VM gateway 已登錄的 action |
+| 命令 | 只執行已發布的 command／solution；模型不得生成任意 SQL／shell／API 呼叫；`CommandType` 由命令目錄決定 |
+| 單一派送 | 每個 CHANGE 只有一次派送許可；失敗不重送、不回滾、不補償；D02 只允許一次逾時唯讀查核 |
+| 秘密 | 憑證只存 secret reference；SecretFilter／OutputGuard 雙重檢查；秘密不進模型、Jira、知識、log |
+| 證據不可變 | raw 原文保留，遮罩投影不得覆寫 raw；報告修訂保留舊版 |
+| 提示注入 | log、工具回應、知識文件、告警 annotation 都是資料；不能修改規則、授權或觸發額外步驟 |
+| Jira／文件 | API token；只寫安全投影；不能透過紀錄 worker 操作維運系統 |
+| 外部模型 | 預設停用；啟用時逐案建立 grant（目的、資料清單、期限、預算），只外送 EXTERNAL_EXPORT_SAFE |
+| 監控接收端 | webhook 驗證（bearer token／basic auth／mTLS 擇一，依來源設定）、payload 大小限制、速率限制；不合法的訊息進入無效訊息紀錄（非法消息通道 4.5，p.77），不丟棄也不開案 |
+
+### 12.2 移除角色區分（U13）
+
+- 身分：LDAP 認證＋Teams 帳號連結保留；只有一種已驗證使用者。
+- 移除：ADMIN／NORMAL_USER、SA-01.1 權限矩陣、role_config、「NORMAL_USER 不可核准」、「ADMIN-only」等規則（清單見附錄 A）。
+- 原本 ADMIN-only、現在**改為所有已驗證使用者可操作，但每次都要寫稽核**的動作：raw evidence 檢視、核准變更、方案／規則／monitor source 設定、resource_hold／execution_hold 解除、外部模型 grant、知識審查發布。
+- 未來要重新加入角色時，以「動作權限清單＋principal 對應」加回，不影響狀態機與資料表結構（這是保留的擴充點，不是本版需求）。
+
+---
+
+## 13. 稽核與可觀測性
+
+### 13.1 稽核
+
+- 所有狀態轉換、核准、規則命中、派送、驗證、hold 設定與解除、設定變更、raw 存取、外部同步都寫只追加的 `case_event`／audit log（消息歷史 11.5，p.402；消息存儲庫 11.6，p.405）。
+- 每筆紀錄帶 `correlation_id`（= work_item_id）與 `causation_id`，可以從告警一路追到 Jira 與知識（關聯標識符 5.7，p.107）。
+- 告警的原始 payload 保存在 `alert_receipt`，標準化事件與原始資料可以互相對照。
+
+### 13.2 Kill switch（execution_hold）
+
+| 範圍 | 效果 | 誰可設定／解除 |
+|---|---|---|
+| `GLOBAL` | 停止所有**新的** CHANGE 派送（含自動修復與已核准待派送的計畫）；監控、去重、開案、調查（唯讀）、Jira 同步照常 | 任何已驗證使用者，**手動一鍵啟動**；系統在核心失效時也會自動啟動 |
+| `TARGET` | 停止指定資源的新 CHANGE | 同上；系統在 UNKNOWN／PARTIAL 時自動設定 |
+| `AUTO_REMEDIATION` | 只停用自動修復白名單，核准流程照常 | 同上 |
+
+- 手動全域停止：Teams 指令與 Web 按鈕都要提供；啟動時填寫原因，寫入 `execution_hold(scope, reason, set_by, set_at, stop_version)`。
+- 已送出的 CHANGE 不會被收回；只會阻擋下一個步驟。
+- 解除需要填寫理由；解除後**不重新排入**被擋下的舊計畫，需要重新核准或重新命中規則（沿用「恢復不續跑」）。任何已驗證使用者都可以解除，不要求不同人；系統自動設定的 hold（例如核心健康不通過），必須核心恢復 READY 後才可解除（U26）。
+- 控制入口集中在平台的管理 API（控制總線 11.2，p.396）。
+
+### 13.3 可觀測性指標（初版）
+
+告警接收量、去重率、新群組數、開案延遲（收到事件 → work_item 建立）、Jira 同步延遲與 PENDING_HUMAN 數、待核准數與等待時間、自動修復命中與成功率、各狀態停留時間、monitor source 健康、被抑制的事件數。
+
+### 13.4 核心健康門檻（調整）
+
+沿用 SD-07.7／SD-08.4 的 core check，但**分成兩級**。Qwen 不可用時（U14），只暫停 AI 分析、AI 提案、AI 摘要，案件標 `blocked_reason=LLM_UNAVAILABLE`，Qwen 恢復後自動續做；其他能力照常：
+
+| 能力 | 必要核心 |
+|---|---|
+| 監控接收、去重、開案、Jira 同步 | DB、稽核寫入 |
+| 唯讀調查（工具） | 上列＋身分、遮罩、派送控制 |
+| AI 分析、提案草稿、結案摘要 | 上列＋Qwen |
+| CHANGE 派送（含自動修復） | 上列＋互斥、憑證、execution_hold 檢查；**不需要 Qwen**：已核准計畫與白名單自動修復照常執行，因為比對與驗證都是確定性的程式邏輯（U14） |
+
+---
+
+## 14. 非功能需求
+
+以下數值已確認採用（U19）；仍做成可配置。
+
+| 編號 | 項目 | 目標值（U19） |
+|---|---|---|
+| NFR-A1 | 受管監控目標數 | 200 個 check、20 個監控來源 |
+| NFR-A2 | 告警接收量 | 持續 20 events/s、尖峰 200 events/s（持續 1 分鐘）不遺失 |
+| NFR-A3 | 偵測到開案／通知延遲 | 從收到 webhook 或 probe 判定 FIRING 起算，P95，不含 Jira：不在關聯範圍的資源 ≤ 30 秒開案；在關聯範圍的資源 ≤ 30 秒發出整合通知；hold 到期只有單一成員時 ≤ hold（預設 60 秒）＋30 秒開案；多成員候選在確認後 ≤ 30 秒開案（確認前依 U18 不開案） |
+| NFR-A4 | 開案到 Jira 建單 | Jira 正常時 P95 ≤ 2 分鐘 |
+| NFR-A5 | 接收端可用性 | 99.5%／月；平台停機期間由 Alertmanager 重送，平台恢復後以冪等接收處理 |
+| NFR-A6 | 去重正確性 | 同一 fingerprint 未結期間重複開案 = 0（併發測試） |
+| NFR-A7 | 安全 | 未授權變更 = 0、秘密外洩 = 0、重複 CHANGE = 0、UNKNOWN 誤報成功 = 0（沿用） |
+| NFR-A8 | 資料保存 | alert_receipt 原始 payload 30 天；work_item／case_event／approval／執行紀錄 3 年；health_sample 明細 14 天、彙總 1 年 |
+| NFR-A9 | RPO／RTO | RPO 15 分鐘、RTO 4 小時（從備份還原時兩種 outbox 都先 hold，人工核對） |
+| NFR-A10 | 規模演進 | 不要求 Kafka／RabbitMQ／Redis；PostgreSQL 單庫＋DB worker；超過 NFR-A2 時再評估 |
+
+---
+
+## 15. 舊文件中仍然有效、直接沿用的內容
+
+- 技術基準：Java 21、Spring Boot 4.1、Spring AI、Gradle 六角形多模組模組化單體（SD-15）；PostgreSQL 為參考 DB；不以 Kafka／RabbitMQ／Redis 為前提。
+- 單一對外 Bot（Teams 主要入口）＋Web 管理稽核介面；LDAP 認證、Teams 帳號連結、去重鍵與 canonical plan 讀回（SD-14.3 中非角色的部分）。
+- MCP → API → VM gateway 路由、無直接 SSH（SD-02.1～02.3）。
+- 方案與執行模型：solution_definition／execution_plan／plan_step／command_execution／attempt；CommandType、CommandResult、CommandExecutionStatus（SA-03.3、SA-04.4）。
+- 單一派送六步、資源互斥、resource_hold、execution_hold、恢復不續跑（SD-07.3～07.6）。
+- D02 一次逾時唯讀查核（SD-14.2）。
+- 證據不可變與遮罩投影、SecretFilter／OutputGuard、提示注入防護（SD-03.3～03.4，去掉角色部分）。
+- 健康檢查分層與 health profile 契約（SD-08.1～08.5；調整見 §5.4、§13.4）。
+- 知識 schema、GitLab MR 發布、強制檢索（SD-14.4）。
+- 標準申請表單與模板（SD-14.6，改為所有使用者可提交與核准）。
+- MQ／ST 兩個驗證模組與「stub 不算通過」原則（SD-11、SD-14.9）。
+
+---
+
+## 16. 待確認
+
+**目前沒有待確認項目。** 2026-10-26 使用者回覆「全部如建議」，原 Q1～Q21 全部轉為 §0 的決策。之後若出現新的未決事項，再列在這裡。
+
+| 原編號 | 決策 | 原編號 | 決策 | 原編號 | 決策 |
+|---|---|---|---|---|---|
+| Q1 | U14 | Q8 | U24 | Q15 | U28 |
+| Q2 | U15 | Q9 | U25 | Q16 | U29 |
+| Q3 | U20 | Q10 | U26 | Q17 | U30 |
+| Q4 | U21 | Q11 | U19 | Q18 | U31 |
+| Q5 | U16 | Q12 | U18 | Q19 | U32 |
+| Q6 | U22 | Q13 | U17 | Q20 | U33 |
+| Q7 | U23 | Q14 | U27 | Q21 | U34 |
+
+所有數值仍做成可配置。
+
+---
+
+## 附錄 A：舊文件應移除或修改的條文清單
+
+圖例：**刪除**＝整段移除；**修改**＝保留主旨、改寫內容；**取代**＝由本文件某節取代。文件代號：SRS＝`DevOps_智慧維運應用需求規格書_草案.md`，SA＝`DevOps_智慧維運應用系統分析規格書_草案.md`，SD＝`DevOps_智慧維運應用系統設計規格書_草案.md`。
+
+| # | 文件 | 位置 | 處置 | 原因 |
+|---|---|---|---|---|
+| 1 | SRS | 文件定位（第 7 行） | 修改 | 版本交叉引用不一致（寫 SD 0.40，實際 SD 標頭為 0.42）；改指向本對齊版 |
+| 2 | SRS | SRS-01 | 修改 | 「已知變更須經 DevOps ADMIN 確認」→ 改為任一已驗證使用者核准，加上白名單自動修復（U9、U13） |
+| 3 | SRS | SRS-02 分期表 P0～P3、「後續獨立立項：多 Bot、未知解法自動執行」 | 刪除 | U8 不分期；U12 忽略多 bot；白名單自動修復已納入目標需求 |
+| 4 | SRS | SRS-03 角色表（ADMIN／NORMAL_USER） | 刪除 | U13 |
+| 5 | SRS | FR-04、FR-24 | 修改 | ADMIN 確認、NORMAL_USER 送審 ADMIN 核准 → 任一使用者核准；無回應維持 PENDING |
+| 6 | SRS | FR-08（raw 僅 ADMIN） | 修改 | 改為所有已驗證使用者受控檢視並稽核（U28） |
+| 7 | SRS | FR-15 | 修改 | 保留每案 Jira；Confluence 依 U25；改成「偵測事件自動開票」 |
+| 8 | SRS | FR-25 | 修改 | 「ADMIN 每案啟動外部模型」→ 使用者每案啟動 grant |
+| 9 | SRS | FR-31 | 修改 | 有界補送改為「DB 持久化＋補送 5 次後停止」（U5、§10.3） |
+| 10 | SRS | 缺少的需求 | 新增 | 外部監控接入、去重、持續監控不告警、主動調查、白名單、結案草稿確認、手動全域停止（§5～§9、§13.2） |
+| 11 | SRS | AC-01、AC-03 | 修改 | 角色相關的驗收條件移除 |
+| 12 | SRS | SRS-08「11 項政策均已確認」 | 修改 | 改為「政策以已對齊需求 §0 的 U1～U34 為準」 |
+| 13 | SRS | SRS-08 ENV-10（保存／容量／RPO／RTO 待填） | 取代 | §14（U19） |
+| 14 | SRS | SRS-10 D03 | 修改 | 補送次數改為 U5 的定義 |
+| 15 | SRS | SRS-10 D05、D08 | 修改 | 去掉 ADMIN／NORMAL_USER 分工 |
+| 16 | SA | 文件定位第 7、9、11 行的歷史決策 banner | 刪除 | 歷史說明與現行規則混雜；歷史改放版本紀錄 |
+| 17 | SA | SA-01.1 權限矩陣（EVIDENCE_READ_RAW、CHANGE_CONFIRM_EXECUTE、CONFIG_MANAGE、ROLE_CONFIG_MANAGE、SCHEDULE_MANAGE、INCIDENT_MANAGE、RECORD_POLICY_MANAGE、EXTERNAL_ASSIST_START、KNOWLEDGE_REVIEW_PUBLISH 皆 ADMIN-only） | 刪除 | U13；改由 §12.2 的「全部可操作＋稽核」取代 |
+| 18 | SA | SA-01.2 角色表與「故障事件不觸發修復」 | 修改 | U13、U9 |
+| 19 | SA | SA-01.3 單一 Bot 與未來多 Bot 邊界 | 修改 | 保留單一 Bot，刪除多 bot 預留（U12） |
+| 20 | SA | SA-02.3 Jenkins 刪除流程「ADMIN 且目標唯一？」 | 修改 | 改為「已驗證且目標唯一」；保留為一個 solution 範例 |
+| 21 | SA | SA-02.4 「P0…；P1 起…」與「調查轉修復須 ADMIN 另建變更 work」 | 修改 | U8：同一案件內 COLLECTING → MATCHING／PROPOSING 連續進行 |
+| 22 | SA | SA-02.5 流程圖「向 admin 展示…」、「user 不能進入修改確認流程」 | 修改 | 改為使用者核准；保留派送前檢查 |
+| 23 | SA | SA-03.2 第 2 點「發現服務異常時…交人工；不自動啟動 Qwen 調查、命中規則修復」 | 刪除 | U6、U8、U9：偵測後自動開案、自動調查 |
+| 24 | SA | SA-03.2 第 5 點（User RBAC 與 admin 確認） | 修改 | U13 |
+| 25 | SA | SA-03.3「故障事件自動修復停用」、「服務異常事件一律先轉人工，不再自動觸發」 | 修改 | U9 白名單 |
+| 26 | SA | SA-03.5 Admin 一次確認完整修改方案（標題與 user 限制） | 修改 | 保留「一次核准整份計畫」，去掉角色 |
+| 27 | SA | SA-03.9 最後一點「告警只記錄並轉人工，不自動修復」 | 修改 | U9 |
+| 28 | SA | SA-04.1 RequestType／RequestStatus | 刪除 | 併入 §3 WorkItemStatus＋item_type |
+| 29 | SA | SA-04.1／SA-04.7 中「Qwen 不可用即核心門檻不通過」（約第 384、560 行） | 修改 | U14（§13.4） |
+| 30 | SA | SA-04.3 IncidentStatus、IncidentClosureReason 與轉換表（含「自動發現異常則先 PENDING_HUMAN」、「RESOLVED→CLOSED 由 admin」） | 刪除 | 併入 §3；closure_reason 擴充 |
+| 31 | SA | SA-04.5 AuthorizationSource（`ADMIN_CONFIRMATION`、`APPROVED_RULE` 不含故障自動修復、`PUBLICATION_DECISION`） | 修改 | 改為 USER_APPROVAL、AUTO_REMEDIATION_RULE；刪除 PUBLICATION_DECISION |
+| 32 | SA | SA-04.6 ExternalSyncStatus 與「舊 ExternalPublicationDecision 僅保留歷史」 | 修改 | 對齊 §10.2；刪除歷史決策說明 |
+| 33 | SA | SA-05 資訊關係表「報告依角色投影；外部寫入需各別同意」 | 刪除 | U6、U13 |
+| 34 | SA | SA-05.3 ADMIN／NORMAL 視圖 | 修改 | 單一視圖（安全投影）＋受控 raw 頁面 |
+| 35 | SA | SA-06.1 去重／聚合／抑制原則 | 修改 | 保留原則，具體規則改引用設計文件 B |
+| 36 | SA | SA-06.5「事故自動修復停用」 | 修改 | U9；「重複告警只追加／關聯紀錄」保留 |
+| 37 | SA | SA-07.1「特定 App 反應變慢…不進行開放式瓶頸探索或提出新解法」 | 修改 | 與 D01（允許新解法建議）矛盾；依 U8 可提出解法 |
+| 38 | SA | SA-07.1 對 SD-09.3 待填項的說法 | 修改 | 與 SRS-08「全部已確認」不一致；統一以已對齊需求 §0 為準 |
+| 39 | SA | SA-07.2「故障目標後續檢查／排程也維持人工限制」 | 刪除 | U4：監控用唯讀檢查持續執行 |
+| 40 | SA | SA-07.6 流程圖與「自動發現故障即使命中已知修正方案，也只記錄事件並轉人工」 | 取代 | §4、§7 |
+| 41 | SA | SA-07.3「由 ADMIN 一次確認；NORMAL_USER 不能核准」 | 修改 | U13 |
+| 42 | SA | SA-08.3「已同意建立兩項外部紀錄時」 | 修改 | 不再需要同意（U6） |
+| 43 | SA | SA-08.4「發布未決定或不建立時不派送；任何同步異常皆 PENDING_HUMAN，狀態機不存在自動 RETRY_WAIT／RECONCILING 路徑」 | 刪除 | 與 D03 矛盾；以 §10 為準 |
+| 44 | SA | SA-08.5 Qwen 中斷全域停止的驗收 | 修改 | U14（§13.4） |
+| 45 | SA | SA-08.6 raw 僅 ADMIN、normal 遮罩的驗收 | 修改 | U28 |
+| 46 | SA | SA-08.7「事件命中已發布修復規則仍只留事件並轉人工」與角色驗收 | 修改 | U9、U13 |
+| 47 | SA | SA-08.10 Qwen 全域停止驗收 | 修改 | U14（§13.4） |
+| 48 | SA | SA-08.11 最後一點「自動告警命中已知方案也不自動修復」 | 修改 | U9 |
+| 49 | SA | SA-08.12 LDAP／角色驗收（NORMAL_USER 拒絕等） | 修改 | U13 |
+| 50 | SA | SA-11.1「兩角色不變」與分期 | 修改 | U8、U13 |
+| 51 | SA | SA-11.2 UC 的 ADMIN 角色、「調查提出修復後，由 ADMIN 明確建立新的 FIXED_CHANGE work」 | 修改 | 同一案件連續流程 |
+| 52 | SA | SA-11.4 Case status（OPEN／ACTIVE／WAITING_INPUT／WAITING_APPROVAL／RESOLVED／PENDING_HUMAN） | 刪除 | 併入 §3 |
+| 53 | SA | SA-11.5、SA-11.6 ADMIN 核准標準申請、啟動外部模型 | 修改 | U13 |
+| 54 | SD | 文件定位第 7～15 行的歷史 banner；第 19 行「本版依 SRS／SA 0.40」與標頭 0.42 不一致 | 修改 | 版本與交叉引用統一 |
+| 55 | SD | SD-01.1 RoleConfigService 兩角色 | 修改 | U13 |
+| 56 | SD | SD-01.2 多 Bot 未來保留說明 | 修改 | U12 |
+| 57 | SD | SD-01.3「多 Bot 委派及未知解法自動執行仍未開放」、SD-01.12 P0～P3 分期 | 修改 | U8、U9、U12 |
+| 58 | SD | SD-02.1「資料維護僅 ADMIN」 | 修改 | U13 |
+| 59 | SD | SD-03.1、SD-03.2 角色規則與 role_config 範例 | 修改 | 保留 LDAP 與 session 規則；刪除角色 |
+| 60 | SD | SD-03.3 RAW_ADMIN 稽核入口 | 修改 | U28 |
+| 61 | SD | SD-04.1 `issue`、`work_request` | 取代 | 併入 `work_item`（§3.5） |
+| 62 | SD | SD-04.1 `publication_decision` | 刪除 | U6 |
+| 63 | SD | SD-04.1 `external_sync_request`「無退避時間或自動重試」 | 修改 | 與 SD-14.7 矛盾；以 §10.3 為準 |
+| 64 | SD | SD-04.1 `admin_authorization`、`role_config`／`principal_role` | 修改 | 合併為 `approval`；principal 不帶角色 |
+| 65 | SD | SD-04.2 REQ-／INC- 分開取號、「Confluence 同意發布後保存 page ID」 | 修改 | 單一序列 `item_no`（類型可轉換）；不再需要同意 |
+| 66 | SD | SD-04.3「已同意的 Jira 建單」、「外部同意有效…」、「寫入／查重失敗一律人工」、篩選「待決定、不建立、已同意待同步」 | 刪除 | U5、U6 |
+| 67 | SD | SD-04.5「確認者…發布決策者分別記錄」、RBAC 依 SA-01 | 修改 | 刪除發布決策者；不依角色 |
+| 68 | SD | SD-07.2 Admin 確認列「user 核准提交直接拒絕」 | 修改 | U13 |
+| 69 | SD | SD-07.7、SD-08.4 CORE_QWEN「全域停止，包含尚未發出的 VERIFY」、CORE_AUTHORIZATION「至少有一位有效設定的 ADMIN」 | 修改 | U14（§13.4）；不分角色後 CORE_AUTHORIZATION 改為「身分服務可用」 |
+| 70 | SD | SD-07.6／SD-07.8 hold 由 admin 解除、沒有手動設定入口 | 修改 | §13.2 手動全域停止與解除 |
+| 71 | SD | SD-08.4 末段「目標服務故障後，該資源的業務檢查／排程停止」 | 刪除 | U4 |
+| 72 | SD | SD-08.5 health profile 清單只有平台主動檢查 | 修改 | 加入 monitor_source／monitor_check（§5.1）與外部 Prometheus 來源 |
+| 73 | SD | SD-09.3「調查與變更操作須分權」、「Qwen 不可用時關閉所有 QUERY／VERIFY／CHANGE」 | 修改 | U13、U14 |
+| 74 | SD | SD-10.1「LDAP 與 RBAC」、「Raw／遮罩」、「後續模組（多 Bot／未知解法自動執行列未來）」 | 修改 | U12、U13、U28 |
+| 75 | SD | SD-10.2 R02、R03、R08、R12、R13、R18 | 修改 | 角色、Qwen 全域停止、多 Bot、RequestStatus 等已被取代 |
+| 76 | SD | SD-14.1 case 模組「管理三模式」 | 修改 | 改為單一狀態機＋work_activity |
+| 77 | SD | SD-14.2 `case_record`、`case_work` | 取代 | 併入 work_item／work_activity |
+| 78 | SD | SD-14.3 role_policy、「核准預設 10 分鐘」 | 修改 | U13；U10（無逾時，核准時重新驗證） |
+| 79 | SD | SD-14.5 ADMIN 每案 grant | 修改 | U13 |
+| 80 | SD | SD-14.6 NORMAL_USER／ADMIN 標準申請分工 | 修改 | U13 |
+| 81 | SD | SD-14.7「5 次寫入嘗試（含首次）、總期限 24 小時」與 record_* 四表 | 修改 | U5、U24；表格依 §3.5 合併 |
+| 82 | SD | SD-14.7 D10 Jira 映射（OPEN／ACTIVE／WAITING_APPROVAL…） | 修改 | 改用 §10.4 單一映射 |
+| 83 | SD | SD-14.9 測試 fixture A01 ADMIN／N01 NORMAL_USER 及相關案例 | 修改 | U13；新增去重、白名單、結案確認測試 |
+| 84 | SD | SD-14.10 「D08 ADMIN 逐案啟動」、「14 待確認：已決定政策轉已確認」 | 修改 | U13；政策以已對齊需求 §0 為準 |
+
+合計 **84 項**：刪除 14 項、取代 4 項、修改 65 項、新增 1 項。主題分布大致為：角色／權限 約 30 項、狀態機與資料表合併 約 10 項、逐案同意與 Jira 補送矛盾 約 10 項、Qwen 全域停止 6 項、故障後停止監控與禁止自動修復 約 12 項、分期／多 bot／版本與 banner 約 12 項。
+
+## 附錄 B：EIP 模式對照
+
+| 平台元件 | EIP 模式（中譯本節號，書頁） |
+|---|---|
+| Alertmanager webhook／probe adapter | 通道適配器（4.8，p.85） |
+| 標準告警事件格式 | 規範數據模型（8.7，p.249）、事件消息（5.4，p.100）、格式指示符（5.10，p.118，對應 `schemaVersion`） |
+| 各來源轉標準格式 | 規範器（8.6，p.247）、消息轉換器（3.6，p.57） |
+| 用資源目錄補齊 resource identity | 內容擴充器（8.3，p.236） |
+| `(source, sourceEventId)` 冪等接收 | 冪等接收者（10.11，p.389） |
+| 告警群組、次數累計 | 聚合器（7.7，p.187） |
+| 事件候選：收集相關告警群組、整合成一則通知 | 聚合器（7.7，p.187）、關聯標識符（5.7，p.107，關聯鍵 `rule_id:environment:root_resource_id`） |
+| 事件候選的確認、拆分、hold 到期、提醒 | 過程管理器（7.12，p.219） |
+| 不合法 payload 保存但不處理 | 非法消息通道（4.5，p.77） |
+| Jira 補送超限轉人工 | 死文字通道（4.6，p.80）的人工處理佇列概念 |
+| 開案＋同步請求同一交易 | 事務性客戶端（10.4，p.356）、可靠傳輸（4.7，p.82） |
+| work_item 狀態機與下一步決策 | 過程管理器（7.12，p.219） |
+| 依 item_type／規則決定流向 | 基於內容的路由器（7.2，p.158） |
+| correlation_id／causation_id | 關聯標識符（5.7，p.107） |
+| case_event、稽核 | 消息歷史（11.5，p.402）、消息存儲庫（11.6，p.405） |
+| kill switch、管理 API | 控制總線（11.2，p.396） |
+| 監控來源自我檢查（合成探測） | 測試消息（11.8，p.416） |
