@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|${item.itemNo}｜AI DevOps 平台|">工作項目</title>
+    <link rel="stylesheet" th:href="@{/css/management.css}">
+    <script th:src="@{/vendor/htmx/htmx.min.js}"></script>
+</head>
+<body class="console" hx-boost="true">
+<main>
+    <p><a href="/work-items">返回清單</a></p>
+    <h1 th:text="${item.itemNo}">OPS</h1>
+    <p class="notice error" th:if="${param.error}">這個動作沒有被接受。結案草稿需要確認，未回覆的核准會留在待核准，強制結案需要先寫回。</p>
+    <dl class="facts">
+        <dt>標題</dt><dd th:text="${item.title}"></dd>
+        <dt>類型</dt><dd th:text="${item.itemType}"></dd>
+        <dt>狀態</dt><dd th:text="${item.status}"></dd>
+        <dt>環境</dt><dd th:text="${item.environment}"></dd>
+        <dt>資源</dt><dd th:text="${item.resourceId}"></dd>
+        <dt>提出者</dt><dd th:text="${item.requestor}"></dd>
+        <dt>阻塞</dt><dd th:text="${item.blockedReason}"></dd>
+        <dt>建議結案</dt><dd th:text="${item.suggestedClosureReason}"></dd>
+        <dt>結案原因</dt><dd th:text="${item.closureReason}"></dd>
+        <dt>更新時間（台北）</dt><dd th:text="${updatedAt}"></dd>
+    </dl>
+    <h2>時間軸</h2>
+    <ol class="timeline">
+        <li th:each="event : ${timeline}">
+            <span th:text="${event.occurredAt}">time</span>
+            <strong th:text="${event.type}">STATE_CHANGED</strong>
+            <span th:text="${event.detail}">detail</span>
+        </li>
+    </ol>
+
+    <section th:if="${item.status == 'CLOSURE_REVIEW'}">
+        <h2>確認結案</h2>
+        <form method="post" hx-boost="false" th:action="@{/work-items/{no}/closure(no=${item.itemNo})}">
+            <label>原因
+                <select name="reason">
+                    <option th:each="reason : ${reasons}" th:value="${reason}" th:text="${reason}"></option>
+                </select>
+            </label>
+            <label>重複案件 UUID <input name="duplicateOf" type="text"></label>
+            <button type="submit">確認結案</button>
+        </form>
+    </section>
+
+    <section th:if="${item.status != 'CLOSED' and !item.activeTakeover}">
+        <h2>商用模型人工接管</h2>
+        <p>平台只打包與寫回，不會呼叫商用模型。</p>
+        <form method="post" hx-boost="false" th:action="@{/work-items/{no}/takeover(no=${item.itemNo})}">
+            <label>工具 <input name="tool" required value="CLAUDE_CODE"></label>
+            <label>模型 <input name="modelName" required value="claude"></label>
+            <label>原因 <input name="reason" required></label>
+            <button type="submit">開始接管</button>
+        </form>
+    </section>
+
+    <section th:if="${item.activeTakeover and item.status != 'CLOSED'}">
+        <h2>接管包與寫回</h2>
+        <form method="get" hx-boost="false" th:action="@{/work-items/{no}/package(no=${item.itemNo})}">
+            <label>要放進接管包的證據 <input name="evidence" type="text"></label>
+            <button type="submit">下載遮罩後的接管包</button>
+        </form>
+        <form method="post" hx-boost="false" th:action="@{/work-items/{no}/write-back(no=${item.itemNo})}">
+            <label>摘要 <input name="summary" required></label>
+            <label>根因 <input name="rootCause" required></label>
+            <label>動作 <input name="actions" required></label>
+            <label>證據 <input name="evidence" required></label>
+            <button type="submit">寫回</button>
+        </form>
+        <form method="post" hx-boost="false" th:action="@{/work-items/{no}/force-close(no=${item.itemNo})}">
+            <label><input name="firingAcknowledged" type="checkbox" value="true"> 我已確認仍在觸發的告警</label>
+            <button type="submit">強制結案</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

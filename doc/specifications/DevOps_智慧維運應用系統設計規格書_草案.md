@@ -1,6 +1,6 @@
 # DevOps 智慧維運應用系統設計規格書
 
-系統設計草案｜設計版本 0.52｜依據 SRS／SA 0.52 與已對齊需求第五版（U1～U42）｜2026 年 10 月 26 日（Asia/Taipei）
+系統設計草案｜設計版本 0.53｜依據 SRS／SA 0.53 與已對齊需求第六版（U1～U45）｜2026 年 10 月 26 日（Asia/Taipei）
 
 ## 文件定位
 
@@ -41,6 +41,7 @@
 | SD-17 | Web 介面與技術選型：登入、清單／明細、read model、索引、Flyway／JPA（U35、U36） |
 | SD-18 | 並行推進與資源鎖：work_task 佇列、worker 設定、resource_lock 資料結構、等待與失效處理（U37、U38） |
 | SD-19 | 商用模型人工接管、接管包、寫回與強制結案（U39～U42） |
+| SD-20 | GitLab OIDC 登入、YAML 服務目錄與監控探測鏈（U43～U45） |
 | 版本紀錄 | 0.50 與舊版摘要 |
 
 # SD-01 系統架構與元件責任
@@ -1829,7 +1830,7 @@ flowchart LR
 
 | 路由 | 行為 |
 |---|---|
-| `GET /login`、`POST /login`、`POST /logout` | 表單登入／登出（沿用 demo 模板與 `login-failure` 頁） |
+| `GET /login`、`GET /oauth2/authorization/gitlab`、`GET /login/oauth2/code/gitlab`、`POST /logout` | platform：GitLab OIDC 登入／登出（SD-20.1）。demo profile 仍是 `POST /login` 表單 |
 | `GET /`、`GET /home` | 轉到 `/work-items` |
 | `GET /work-items` | 清單；查詢參數 `service`（可多值，`UNCLASSIFIED`／`NONE` 為保留值）、`from`、`to`、`timeField`（created／updated）、`status`（可多值）、`includeClosed`、`type`、`q`、`page`、`size`（20／50／100）、`sort`。帶 `HX-Request` 標頭只回清單片段，否則回整頁；htmx 以 `hx-push-url` 同步網址 |
 | `GET /work-items/{itemNo}` | 明細整頁（基本資料與時間軸第一頁） |
@@ -2189,10 +2190,46 @@ ALTER TABLE work_item ADD COLUMN active_takeover_id uuid REFERENCES manual_takeo
 | TK-09 | 寫回含 OFF_PLATFORM 但未勾選 operator_ack 被拒；勾選後有 MANUAL_ACTION 事件 |
 | TK-10 | Web 表單缺 CSRF token 回 403；未登入回 401／導向登入 |
 
+# SD-20 GitLab OIDC、服務目錄與監控探測鏈
+
+對應 FR-51～53、SA-14、AR §21。
+
+## SD-20.1 登入
+
+- 只在 `platform` profile 啟用。`spring.security.oauth2.client.registration.gitlab`：authorization code、scopes `openid,profile,email`、redirect `{baseUrl}/login/oauth2/code/{registrationId}`。
+- Provider 的 `issuer-uri` 是 `platform.gitlab.base-url`（環境變數 `GITLAB_BASE_URL`）。Client id／secret 為 `${GITLAB_OAUTH_CLIENT_ID}`、`${GITLAB_OAUTH_CLIENT_SECRET}`。
+- `GrantedAuthoritiesMapper` 固定只給 `ROLE_USER`。GitLab `groups` 不進授權。
+- `defaultSuccessUrl("/work-items", false)` 搭配 saved request。還原後的網址可能帶 Spring Security 的 `continue` 標記，路徑與原查詢仍在。
+- 登入頁是連到 `/oauth2/authorization/gitlab` 的連結，沒有密碼欄。`demo` profile 的表單鏈不載入這組 registration。
+- 測試以行程內的 JDK HTTP mock 提供 discovery、authorize、token、JWKS 與 userinfo。不連真 GitLab。
+
+## SD-20.2 目錄
+
+- 檔案預設 `config/platform-services.yml`，由 `platform.catalog.file` 指定。載入器先把 YAML 綁到 `@ConfigurationProperties(prefix = "platform.services")`，placeholder 在檢查前不解析，秘密欄位因此仍是 `${NAME}`。
+- 檢查在 `CatalogRules`（model）：template、instance、integration 的必填欄位、probe 名稱、template type、id 唯一、秘密形式。通過後才向 `Environment` 解析。
+- 解析值放在 `SecretBundle`。`toString` 只列參考名稱。啟動 bean 在 `platform` profile；失敗則 context 起不來。
+- 範例含 gitlab、jenkins、vm 三個 template 與三個實例，以及 Jira、Teams、LiteLLM、GitLab OAuth、Glove MCP。
+
+## SD-20.3 探測
+
+- 順序與判定在 `ProbeChain`（model）。`ProbeRunner`（service）依序呼叫 `EndpointProbePort`、`McpProbePort`、`ApiProbePort`、`GloveProbePort`，通道失敗以外的結果立即停止。
+- `ProbePublisher` 把每次嘗試寫入 `probe_result`（Flyway V2）。`INCIDENT` 走既有 generic ingest，`source_id=probe`，source type `HTTP_ENDPOINT_PROBE`；開案時寫 `work_activity.detail` 與 `case_event` `PROBE_OBSERVED`。`CHANNEL_DEGRADED` 只 `INSERT … ON CONFLICT (dedup_key) DO NOTHING` 到 `notification_outbox`。
+- 正式 adapter 是 `Unavailable*Probe`，回報通道尚未設定，不開外網連線。`platform.monitoring.enabled=false` 時不排程。測試以 fake port 驅動 runner 與 publisher。
+- Glove 是最後一層的 VM 狀態 port。平台不持有 SSH 金鑰。
+
+## SD-20.4 測試
+
+| 編號 | 測試 |
+|---|---|
+| GL-01 | mock OIDC：授權網址含 openid、profile、email 與 client id；登入後回到深連結；群組不是角色 |
+| GL-02 | 範例 YAML 解出參考且 toString 不含值；字面秘密、未知類型、未知 probe、重複 id、未解析參考失敗 |
+| GL-03 | 不健康停止鏈並只開一張 `probe` 單，第二次只加 occurrence；通道失敗加健康較低層只一則通知、零張單；三層都失敗的標題含三個原因 |
+
 ## 版本紀錄
 
 | 版本 | 日期 | 摘要 |
 |---|---|---|
+| 0.53 | 2026-10-26 | 依已對齊需求第六版 U43～U45 新增 SD-20：GitLab OIDC registration、YAML catalog 與 SecretBundle、ProbeChain／ProbeRunner／probe_result、通道降級通知、GL-01～03。SD-17.3 的 platform 登入改為 OIDC。 |
 | 0.52 | 2026-10-26 | 依已對齊需求第五版 U39～U42 新增 SD-19：manual_takeover／takeover_package／takeover_writeback DDL、TakeoverUseCase 步驟（接管 T27、接管包與遮罩、寫回、強制結案 T28、結束接管）、Web 區塊、設定、指標與 TK-01～10 測試；SD-01.7 新增接管 API；SD-04.1 補 active_takeover_id、TAKEOVER、接管事件、CANCELLED；SD-14.5 補人工接管例外。 |
 | 0.51 | 2026-10-26 | 依已對齊需求第四版 U35～U38 新增 SD-17（Web 介面與技術選型：PostgreSQL／Flyway／JPA Specification、form login＋LDAP、Thymeleaf＋htmx、read model、路由與 filter chain、索引、沿用 `b8a23d4` demo 的修正）與 SD-18（work_task 佇列、worker 設定、resource_lock／resource_lock_waiter、等待與失效鎖處理、測試）；SD-01.10 修改 worker 預設改 2；SD-01.7、SD-04.1、SD-07.3、SD-14.1、SD-15.1 加指引。AR Q22～Q26 待確認。 |
 | 0.50 | 2026-10-26 | 依已對齊需求 U1～U34 與附錄 A 改寫：移除 ADMIN／NORMAL_USER 角色與 RBAC，改為已驗證身分與可自我核准（標示）；資料模型合併為 `work_item`／`work_activity`／`approval`／`external_sync_*`，刪除 publication_decision；單一 WorkItemStatus 與 AR §10.4 Jira 映射；Jira 補送 5 次、無總期限；Qwen 不可用只暫停 AI 步驟；故障期間持續唯讀監控；手動 kill switch；新增 SD-14.11 監控去重與事件關聯摘要；移除首版／MVP／分期與多 Bot 用語。 |

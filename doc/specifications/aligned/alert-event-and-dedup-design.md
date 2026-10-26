@@ -50,7 +50,7 @@ flowchart LR
 | `source.sourceId` | string | 是 | 已登錄的 `monitor_source.source_id` | `"am-prod-01"` |
 | `source.normalizer` | string | 是 | 使用的 normalizer 與版本 | `"alertmanager-v4@1"` |
 | `source.link` | string(uri) | 否 | 回到來源的連結（Prometheus graph、probe 設定頁） | `"http://prom:9090/graph?g0.expr=..."` |
-| `sourceEventId` | string | 是 | 來源中這筆訊號的穩定 ID；與 `source.sourceId` 合起來做冪等接收。算法見 §1.5 | `"a1b2c3d4e5f60718:1761463800000:firing"` |
+| `sourceEventId` | string | 是 | 來源中這筆訊號的穩定 ID；與 `source.sourceId` 合起來做冪等接收。算法見 §1.5 | `"a1b2c3d4e5f60718:1792999800000:firing"` |
 | `sourceFingerprint` | string | 否 | 來源自己的指紋（Alertmanager `alerts[].fingerprint`）；只作追溯，**不作平台去重鍵** | `"a1b2c3d4e5f60718"` |
 | `fingerprint` | string(64 hex) | 是 | 平台去重鍵；同一資源＋同一症狀＋區分維度相同就相同。算法見 §2 | `"9d4c…e1"` |
 | `fingerprintVersion` | string | 是 | fingerprint 算法版本 | `"fp-v1"` |
@@ -306,7 +306,7 @@ Alertmanager webhook（`version: "4"`）結構：`version`、`groupKey`、`trunc
     "normalizer": "alertmanager-v4@1",
     "link": "http://prometheus.prod.internal:9090/graph?g0.expr=..."
   },
-  "sourceEventId": "a1b2c3d4e5f60718:1761463800000:firing",
+  "sourceEventId": "a1b2c3d4e5f60718:1792999800000:firing",
   "sourceFingerprint": "a1b2c3d4e5f60718",
   "fingerprint": "3f6a1c0d9b2e4f78a5c3d1e0b9a8f7e6d5c4b3a2918070f6e5d4c3b2a1908f7e",
   "fingerprintVersion": "fp-v1",

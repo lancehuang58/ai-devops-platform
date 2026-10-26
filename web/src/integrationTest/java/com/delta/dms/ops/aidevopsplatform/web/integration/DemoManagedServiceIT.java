@@ -52,10 +52,10 @@ class DemoManagedServiceIT {
         assertThat(saved.statusCode()).isEqualTo(200);assertThat(saved.body()).isEqualTo(response.body());
         assertThat(outbox.pending(100)).isEmpty();
     }
-    @Test void missingWrongAndUnassignedCredentialsAreRejected() throws Exception {
+    @Test void missingAndWrongCredentialsAreRejectedButARoleIsNotRequired() throws Exception {
         assertThat(get("/api/v1/managed-services",null).statusCode()).isEqualTo(401);
         assertThat(get("/api/v1/managed-services","admin:wrong").statusCode()).isEqualTo(401);
-        assertThat(get("/api/v1/managed-services","unassigned:demo-unassigned").statusCode()).isEqualTo(401);
+        assertThat(get("/api/v1/managed-services","unassigned:demo-unassigned").statusCode()).isEqualTo(200);
     }
     @Test void disabledAndUnknownServicesCannotBeProbed() throws Exception {
         assertThat(get("/api/v1/managed-services/jenkins-disabled/status","normal:demo-normal").statusCode()).isEqualTo(404);

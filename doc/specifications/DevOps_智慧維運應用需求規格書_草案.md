@@ -1,10 +1,10 @@
 # DevOps 智慧維運應用需求規格書
 
-需求基準草案｜版本 0.52｜依據已對齊需求第五版（U1～U42）｜2026 年 10 月 26 日（Asia/Taipei）
+需求基準草案｜版本 0.53｜依據已對齊需求第六版（U1～U45）｜2026 年 10 月 26 日（Asia/Taipei）
 
 ## 文件定位與整合依據
 
-本版依 [已對齊需求](aligned/aligned-requirements.md)（以下稱「已對齊需求」，42 項使用者決策 U1～U42）改寫 SRS 0.40，並與 SA 0.52、SD 0.52 同步。監控事件格式、去重與跨資源關聯見 [告警事件與去重設計](aligned/alert-event-and-dedup-design.md)（以下稱「設計文件 B」）。沿用 Spring Boot／Spring AI，不採 Rust。三份規格書與已對齊需求衝突時，以已對齊需求為準。
+本版依 [已對齊需求](aligned/aligned-requirements.md)（以下稱「已對齊需求」，45 項使用者決策 U1～U45）改寫 SRS 0.40，並與 SA 0.53、SD 0.53 同步。監控事件格式、去重與跨資源關聯見 [告警事件與去重設計](aligned/alert-event-and-dedup-design.md)（以下稱「設計文件 B」）。沿用 Spring Boot／Spring AI，不採 Rust。三份規格書與已對齊需求衝突時，以已對齊需求為準。
 
 本文件只定義目標、範圍、身分與稽核原則及驗收；流程與狀態見 SA，元件、API、資料與設定見 SD。兩個測試模組仍各自維護案例。尚無真實端點或測試資料，文件預期結果不代表實測通過。
 
@@ -115,6 +115,9 @@
 | FR-48 | 接管包（U40）：伺服器端組裝並遮罩告警、調查證據、狀態與歷程、已提出的解法、相關白名單與規則，輸出版本化 zip 與 manifest；遮罩依已對齊需求 §20.4 規則，元件失效即拒絕產生；使用外部模型 grant（目的 MANUAL_TAKEOVER）；產生與每次下載都稽核（已對齊需求 §20.4）。 |
 | FR-49 | 寫回（U41）：已登入使用者以 Web／API 寫回摘要、根因、已執行處置（標 PLATFORM／OFF_PLATFORM）與驗證證據；內容先經 SecretFilter，存成低信任證據；OFF_PLATFORM 動作須勾選由操作者負責並寫 MANUAL_ACTION；接管中經平台執行的修改仍走核准、資源鎖與 kill switch（已對齊需求 §20.5～20.6）。 |
 | FR-50 | 強制結案（U41）：接管中、已有寫回、且沒有可能已派送未終態的執行時，使用者可經 T28 直接結案，`closure_reason=FORCED_BY_COMMERCIAL_MODEL`，不經 CLOSURE_REVIEW；以寫回產生並鎖定結案草稿；不清除 resource_hold／kill switch；Jira 照常同步（已對齊需求 §20.7）。 |
+| FR-51 | GitLab 登入（U43）：platform Web 以公司自建 GitLab 的 OIDC authorization code 登入，scopes 為 `openid profile email`，GitLab base URL 與 client id／secret 來自設定。不把 GitLab 群組當角色；任何通過驗證的使用者看到相同內容。深連結在登入後回到原請求。測試使用 mock OIDC，不連真 GitLab（已對齊需求 §21.1）。 |
+| FR-52 | 服務目錄（U44）：受管服務與整合服務以 YAML 的型別化 `@ConfigurationProperties` 定義。秘密只允許 `${NAME}` 環境參考。啟動時拒絕缺欄位、解不出來的參考、未知 template type、未知 probe、重複 id 與字面秘密；日誌與錯誤訊息不含秘密值（已對齊需求 §21.2）。 |
+| FR-53 | 監控模板與探測鏈（U45）：模板提供預設探測、間隔與門檻；實例提供 id、type、environment、URL、憑證參考與覆寫。順序固定 endpoint → MCP → API → VM（Glove）。只有通道本身失敗才降級；通道回報不健康立刻開案；全部通道失敗才判定 down／unknown，單上帶每一層原因；較高通道失敗但較低通道健康時只發不重複的通道降級通知、不開事故單。結果記錄通道與 fallback 原因，並進入既有標準告警去重（source `probe`）。此順序不適用於變更執行（已對齊需求 §21.3）。 |
 
 ## SRS-05 組織與技術限制
 
@@ -125,10 +128,10 @@
 | CON-03 | 能力發布時依 MCP → API → 公司 VM gateway 選路，執行故障不自動切換。既有 Job 刪除維持 MCP 契約。 |
 | CON-04 | Bot 不直接 SSH，不保存 VM SSH key；VM management 由公司專屬服務提供受控 action。 |
 | CON-05 | Jira／Confluence 使用公司 API token 及 API adapter。 |
-| CON-06 | LDAP 驗證＋Teams 可信帳號連結；不分角色（U13）。第三方模型不具人員核准身分。 |
+| CON-06 | platform Web 以 GitLab OIDC 驗證（U43）；GitLab 本身接 LDAP。Teams 可信帳號連結保留。不分角色（U13）。第三方模型不具人員核准身分。 |
 | CON-07 | 現有 PostgreSQL、MariaDB 11.8、GitLab、Confluence 可用性與權限由公司確認。PostgreSQL 為平台參考 DB；版本／extension／獨立 instance 尚待環境驗證。 |
 | CON-08 | 原始秘密不進聊天、提示、知識、報告或記錄管線。測試 DB user 的秘密交付／到期處理契約未定案前，不發布建立帳號能力。 |
-| CON-09 | 技術選型（U36）：Spring Boot 生態系；PostgreSQL＋Flyway；Spring Data JPA；Spring Security 表單登入＋伺服器端 session（LDAP bind，可選加 OIDC）；Thymeleaf＋htmx 與 App 同一部署；不引入 Kafka／RabbitMQ／Redis 或 SPA（已對齊需求 §18）。 |
+| CON-09 | 技術選型（U36、U43）：Spring Boot 生態系；PostgreSQL＋Flyway；Spring Data JPA；platform 使用 Spring Security OAuth2 Client（GitLab OIDC）＋伺服器端 session，demo 仍為表單登入；Thymeleaf＋htmx 與 App 同一部署；不引入 Kafka／RabbitMQ／Redis 或 SPA（已對齊需求 §18、§21.1）。 |
 | CON-10 | 商用模型只用個人訂閱方案（U42）：不用 API key，平台不經 LiteLLM 呼叫商用模型，也不發給 CLI 回呼用的機器 token；由人在自己的機器、自己的帳號操作；不得做成無人值守後端；受用量上限限制；導入前須重新確認供應商條款與公司資料政策（已對齊需求 §20.1、Q27）。 |
 
 ## SRS-06 非功能需求
@@ -181,10 +184,13 @@
 | AC-28 | 接管包不含 raw、秘密值、連線字串帳密、Authorization 標頭、他案資料；含已植入假秘密的測試資料時全部被換成占位符；遮罩元件失效時拒絕產生；產生與每次下載都有 case_event。 |
 | AC-29 | APPLYING 中接管：尚未取得發送許可的根執行 CANCELLED 且鎖釋放；可能已派送者不中斷、不重送，鎖依 FR-46 釋放或轉 resource_hold；有在途執行時強制結案被拒絕。 |
 | AC-30 | 強制結案：沒有寫回時被拒絕；成功時狀態 CLOSED、`closure_reason=FORCED_BY_COMMERCIAL_MODEL`、不經 CLOSURE_REVIEW、草稿版本鎖定、Jira 同步請求建立、resource_hold 仍在。 |
+| AC-31 | 未登入的深連結經 mock GitLab OIDC（scopes 含 openid、profile、email）後回到原請求；GitLab 群組不會變成角色；登入頁沒有密碼欄。不連真 GitLab。 |
+| AC-32 | 範例服務目錄在秘密參考都解得出來時可以啟動，文字形式不含秘密值；字面秘密、未知 template type、未知 probe、重複 id 或解不出來的 `${NAME}` 讓啟動失敗，訊息含參考名稱、不含秘密值。 |
+| AC-33 | endpoint 回報不健康時立刻開一張 source 為 `probe` 的單，不再呼叫較低通道；同一指紋的下一次探測只累計次數。endpoint 通道失敗而較低通道健康時不開單，通道降級通知只留一筆。全部設定通道失敗時開一張單，摘要含每一層原因，並寫入 probe_result 與 work_activity。 |
 
 ## SRS-08 開發填值與仍待落實事項
 
-政策以已對齊需求 §0 的 U1～U42 為準；已對齊需求 §16 的 Q22～Q26（Web 與並行的建議值）與 Q27～Q31（人工接管的建議值）尚待使用者確認，見 ENV-14、ENV-15。以下是部署／實作參數；缺值只停用相應能力，不推翻已確認需求。
+政策以已對齊需求 §0 的 U1～U45 為準；已對齊需求 §16 的 Q22～Q26（Web 與並行的建議值）與 Q27～Q31（人工接管的建議值）尚待使用者確認，見 ENV-14、ENV-15。以下是部署／實作參數；缺值只停用相應能力，不推翻已確認需求。
 
 | ID | 需提供／驗證 | 未完成時行為 |
 |---|---|---|
@@ -219,10 +225,11 @@
 | 故障與品質門檻 | SA-06、SA-11.9 | SD-07～08、SD-14.9～10 | ST-PLT33～36 |
 | FR-43～46 Web、並行推進、資源鎖；CON-09 | SA-12 | SD-17、SD-18 | AC-23～26；待新增 ST 案例 |
 | FR-47～50 商用模型人工接管、接管包、寫回、強制結案；CON-10 | SA-13 | SD-19 | AC-27～30；待新增 ST 案例 |
+| FR-51～53 GitLab 登入、服務目錄、監控探測鏈 | SA-14 | SD-20 | AC-31～33 |
 
 ## SRS-10 決策與版本紀錄
 
-需求決策以已對齊需求 §0 的 U1～U42 為準。2026-10-17 的 D01～D11 中，仍有效的內容已併入 U 決策與本文；與 U 決策衝突的部分已改寫：
+需求決策以已對齊需求 §0 的 U1～U45 為準。2026-10-17 的 D01～D11 中，仍有效的內容已併入 U 決策與本文；與 U 決策衝突的部分已改寫：
 
 | 決策 | 現行規則 |
 |---|---|
@@ -238,7 +245,7 @@
 | D10 | 依 WorkItemStatus 單一映射同步 Jira workflow；transition ID 需配置驗證，不反向觸發維運 |
 | D11 | 由 U8 取代：不再寫分期；交付順序另由開發計畫管理 |
 
-版本：0.28 拆分 SRS／SA／SD；0.29 單 Bot；0.30 MQ／ST 分離；0.31 Job 備份刪除；0.32 自主唯讀與非敏感平等查詢；0.40 整合平台需求及 D01～11；0.50（2026-10-26）依已對齊需求 U1～U34 改寫：不分角色、單一狀態機、監控事件接入與去重、跨資源關聯、自動修復白名單、結案草稿確認、Jira 補送 5 次、Qwen 不可用只停 AI 步驟、移除分期與多 Bot 預留；0.51（2026-10-26）依 U35～U38 新增 Web 登入／清單／明細（FR-43、44）、並行推進與資源鎖（FR-45、46）、技術選型 CON-09、NFR-11、AC-23～26；0.52（2026-10-26）依 U39～U42 新增商用模型人工接管、接管包、寫回與強制結案（FR-47～50）、訂閱方案限制 CON-10、AC-27～30、ENV-15，FR-25 補人工接管例外。舊版歷史保留在 git 紀錄。
+版本：0.28 拆分 SRS／SA／SD；0.29 單 Bot；0.30 MQ／ST 分離；0.31 Job 備份刪除；0.32 自主唯讀與非敏感平等查詢；0.40 整合平台需求及 D01～11；0.50（2026-10-26）依已對齊需求 U1～U34 改寫：不分角色、單一狀態機、監控事件接入與去重、跨資源關聯、自動修復白名單、結案草稿確認、Jira 補送 5 次、Qwen 不可用只停 AI 步驟、移除分期與多 Bot 預留；0.51（2026-10-26）依 U35～U38 新增 Web 登入／清單／明細（FR-43、44）、並行推進與資源鎖（FR-45、46）、技術選型 CON-09、NFR-11、AC-23～26；0.52（2026-10-26）依 U39～U42 新增商用模型人工接管、接管包、寫回與強制結案（FR-47～50）、訂閱方案限制 CON-10、AC-27～30、ENV-15，FR-25 補人工接管例外。0.53（2026-10-26）依 U43～U45 新增 GitLab OIDC 登入、YAML 服務目錄與監控探測鏈（FR-51～53）、AC-31～33；CON-06、CON-09 改為 platform 使用 GitLab OIDC。舊版歷史保留在 git 紀錄。
 
 配套文件：
 

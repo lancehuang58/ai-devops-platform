@@ -49,3 +49,19 @@ button {
 }
 button:hover { background: #244a6e; }
 a { color: #2f5d8a; }
+body.console { display: block; }
+body.console main { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
+body.console h1 { margin-bottom: .4rem; }
+.bar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.filters, .facts, table { background: #fff; border: 1px solid #d6dbe1; border-radius: 8px; }
+.filters { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; padding: 1rem; margin: 1rem 0; }
+.filters label, section label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; }
+.filters input, .filters select, section input, section select { width: auto; min-width: 8rem; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid #e6ebf0; }
+.meta, .pager { color: #52606d; }
+.facts { display: grid; grid-template-columns: 9rem 1fr; padding: 1rem; }
+.facts dt { font-weight: 600; }
+.timeline { background: #fff; border-radius: 8px; padding: 1rem 1rem 1rem 2rem; }
+section { margin-top: 1.5rem; }
+section form { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin: .5rem 0 1rem; }

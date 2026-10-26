@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>登入｜AI DevOps 平台</title>
+    <link rel="stylesheet" th:href="@{/css/management.css}">
+</head>
+<body>
+<main class="card">
+    <h1>AI DevOps 平台</h1>
+    <p class="notice">使用公司 GitLab 登入。GitLab 本身已接上 LDAP。任何通過 GitLab 驗證的使用者看到相同的工作項目，沒有角色區隔。</p>
+    <p th:if="${param.logout}" class="notice success">您已登出。</p>
+    <p><a href="/oauth2/authorization/gitlab">以 GitLab 登入</a></p>
+</main>
+</body>
+</html>
