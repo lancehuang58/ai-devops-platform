@@ -52,7 +52,7 @@ class PlatformPersistenceTest {
             ready.await();
             go.countDown();
         }
-        assertThat(opened).hasValue(1);
+        assertThat(opened.get()).isEqualTo(1);
         assertThat(store.countOpenGroups(fingerprint)).isEqualTo(1);
         assertThat(store.countOpenWorkItemsForResource("vm-parallel")).isEqualTo(1);
         assertThat(store.occurrenceCount(fingerprint)).isEqualTo(threads);
@@ -79,9 +79,11 @@ class PlatformPersistenceTest {
         assertThat(store.groupStatus(fingerprint)).isEqualTo(GroupStatus.RECOVERING);
         assertThat(store.isFlapping(fingerprint)).isTrue();
         assertThat(store.countOpenWorkItemsForResource("vm-flap")).isEqualTo(1);
-        store.sweepRecovering(NOW.plusSeconds(180).plus(Duration.ofMinutes(15)));
+        var stableAt = NOW.plusSeconds(180).plus(Duration.ofMinutes(15));
+        store.sweepRecovering(stableAt);
         assertThat(store.groupStatus(fingerprint)).isEqualTo(GroupStatus.RECOVERED);
-        store.ingest(alert("src-a", "f3", fingerprint, "vm-flap", SignalStatus.FIRING, Severity.CRITICAL, NOW.plus(Duration.ofMinutes(10))), NOW.plus(Duration.ofMinutes(10)), null);
+        var refireAt = stableAt.plusSeconds(30);
+        store.ingest(alert("src-a", "f3", fingerprint, "vm-flap", SignalStatus.FIRING, Severity.CRITICAL, refireAt), refireAt, null);
         assertThat(store.countOpenGroups(fingerprint)).isEqualTo(1);
         assertThat(store.countOpenWorkItemsForResource("vm-flap")).isEqualTo(1);
     }
@@ -116,6 +118,7 @@ class PlatformPersistenceTest {
     }
 
     @Test void skipLockedClaimsDistinctTasksAndOneClaimPerItem() throws Exception {
+        store.finishReadyTasks();
         var itemA = store.insertWaitingItem("OPS-lock-a", "vm-tasks-a");
         var itemB = store.insertWaitingItem("OPS-lock-b", "vm-tasks-b");
         store.enqueueTask(itemA, "advance-a", NOW);
@@ -131,6 +134,7 @@ class PlatformPersistenceTest {
     }
 
     @Test void parallelClaimsDoNotDoubleBookATask() throws Exception {
+        store.finishReadyTasks();
         for (int i = 0; i < 8; i++) {
             var item = store.insertWaitingItem("OPS-par-" + i, "vm-par-" + i);
             store.enqueueTask(item, "job-" + i, NOW);
@@ -174,16 +178,16 @@ class PlatformPersistenceTest {
         var item = store.insertWaitingItem("OPS-jira", "vm-jira");
         var request = store.enqueueSync(item, "create:" + item, NOW);
         for (int attempt = 1; attempt <= 5; attempt++) {
-            var claimed = store.claimSync(NOW.plus(Duration.ofDays(attempt)), "sync");
+            var claimed = store.claimSync(request, NOW.plus(Duration.ofDays(attempt)), "sync");
             assertThat(claimed).isPresent();
             var progress = store.failSync(request, NOW.plus(Duration.ofDays(attempt)), 0.0);
             assertThat(progress.stop()).isFalse();
         }
-        var last = store.claimSync(NOW.plus(Duration.ofDays(10)), "sync");
+        var last = store.claimSync(request, NOW.plus(Duration.ofDays(10)), "sync");
         assertThat(last).isPresent();
         var stopped = store.failSync(request, NOW.plus(Duration.ofDays(10)), 0.0);
         assertThat(stopped.stop()).isTrue();
-        assertThat(store.claimSync(NOW.plus(Duration.ofDays(30)), "sync")).isEmpty();
+        assertThat(store.claimSync(request, NOW.plus(Duration.ofDays(30)), "sync")).isEmpty();
         assertThat(store.syncStatus(request)).isEqualTo("PENDING_HUMAN");
         assertThat(store.syncAttempts(request)).isEqualTo(6);
     }
