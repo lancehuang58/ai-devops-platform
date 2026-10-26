@@ -2,11 +2,11 @@
 
 | 項目 | 內容 |
 |---|---|
-| 文件性質 | 對齊後的**目標需求**基準；SRS／SA／SD 0.50 依本文件改寫（舊 0.40～0.42 中衝突的條文已刪改，見附錄 A） |
-| 依據 | 儲存庫 `lancehuang58/ai-devops-platform` commit `2661434` 的 `doc/specifications/` 三份規格書，加上使用者 2026-10 的 34 項決策（見 §0） |
+| 文件性質 | 對齊後的**目標需求**基準；SRS／SA／SD 0.51 依本文件改寫（舊 0.40～0.42 中衝突的條文已刪改，見附錄 A） |
+| 依據 | 儲存庫 `lancehuang58/ai-devops-platform` commit `2661434` 的 `doc/specifications/` 三份規格書，加上使用者 2026-10 的 38 項決策（見 §0；U35～U38 依 2026-10-26 Web 介面需求，並沿用 commit `b8a23d4` 的管理登入 demo） |
 | 搭配文件 | [`alert-event-and-dedup-design.md`](./alert-event-and-dedup-design.md)：監控事件格式、去重資料結構與流程 |
-| 版本 | 第三版（2026-10-26）：納入 U20～U34，所有待確認項目都已決定（§16）。第二版：納入 U14～U19；跨資源關聯改為「先整合成一則通知，確認是同一事件後才開單」 |
-| 狀態 | 已確認（2026-10-26，使用者回覆「全部如建議」）。SRS／SA／SD 已依附錄 A 刪改並升為 0.50（本機分支 `docs/aligned-requirements`） |
+| 版本 | 第四版（2026-10-26）：納入 U35～U38（Web 介面、技術選型、並行推進與資源鎖，§17～§19）；§16 新增 Q22～Q26 建議值待確認。第三版（2026-10-26）：納入 U20～U34，所有待確認項目都已決定（§16）。第二版：納入 U14～U19；跨資源關聯改為「先整合成一則通知，確認是同一事件後才開單」 |
+| 狀態 | 已確認（2026-10-26，使用者回覆「全部如建議」）。SRS／SA／SD 已依附錄 A 刪改並升為 0.50（本機分支 `docs/aligned-requirements`）。第四版 U35～U38 依使用者 2026-10-26 指示（Web 登入／清單／篩選／明細；前端採 Thymeleaf＋htmx）；Q22～Q26 為建議值，尚待使用者確認；SRS／SA／SD 隨之升為 0.51 |
 | EIP 引用 | 《企業集成模式》中譯本，格式為「模式名（節號，書頁）」 |
 
 ---
@@ -49,6 +49,10 @@
 | U32 | 關聯參數：hold 60 秒；收集窗 10 分鐘；影響範圍深度 2；通知更新節流 30 秒；提醒 30 分鐘；確認後新成員「可能相關」提示 10 分鐘（原 Q19） | 設計文件 B §5.11 |
 | U33 | 確認前所有成員都恢復：穩定超過重開窗（30 分鐘）後轉 `DISMISSED`，不開單、不開 Jira；Web 提供「補開單」（原 Q20） | §5.5 |
 | U34 | 首批關聯規則：`storage-deps`、`db-deps`，沿 SD-05 `DEPENDS_ON`，都先設 `auto_confirm=false`，運作穩定後再逐條開啟（原 Q21） | 設計文件 B §5.11 |
+| U35 | Web 介面：已驗證使用者以公司帳號密碼登入；看到進行中的工作項目及各自目前的 WorkItemStatus；可依系統（服務）、時間區間、狀態篩選並分頁；點選看明細（告警內容、調查資料、解法、核准紀錄、結案草稿、時間軸）；不分角色，所有登入者看到相同內容 | §17 |
+| U36 | 技術選型：Spring Boot 生態系（使用者已定）；PostgreSQL＋Flyway；Spring Data JPA（清單篩選用 Specification）；Spring Security 表單登入＋伺服器端 session（帳密以 LDAP bind 驗證，之後可選 OIDC 接 Keycloak／AD）；前端 Thymeleaf＋htmx 與 App 同一部署（使用者選定，不採 React／Vue SPA） | §18 |
+| U37 | 並行推進：多個工作項目同時推進；worker 數量可配置；等待核准、使用者補資料、Qwen 回應或 VERIFY 取樣間隔時保存狀態並釋放 worker | §19.1～§19.2 |
+| U38 | 資源鎖：同一目標資源同時只允許一個工作項目在 APPLYING／VERIFYING 持有變更權；其他資源不受影響；後到者標 `blocked_reason=RESOURCE_LOCK_WAIT` 排隊，等待上限到期轉 PENDING_HUMAN；租約過期但可能仍有在途命令時不自動放行 | §19.3～§19.5 |
 
 ---
 
@@ -138,7 +142,7 @@ PostgreSQL、MariaDB、Jenkins、GitLab、Jira、Confluence、Nexus、Harbor、G
 
 `closure_reason`：`RESOLVED`（已解決）、`SELF_RECOVERED`（自行恢復，未套用變更）、`FULFILLED`（需求完成）、`CONCLUDED`（討論或調查已有結論）、`FALSE_POSITIVE`（誤報）、`DUPLICATE`（重複，需填 `duplicate_of`）、`WITHDRAWN`（撤回或取消）、`WONT_FIX`（決定不處理）。舊的 `CANCELLED` 狀態改為 `CLOSED + WITHDRAWN`，同樣要經過結案確認。
 
-輔助欄位（不是狀態）：`blocked_reason`（例如 `LLM_UNAVAILABLE`、`KILL_SWITCH`、`RESOURCE_HOLD`、`JIRA_SYNC_PENDING`，用於顯示「卡在哪裡」，不改變狀態）、`signal_state`（關聯告警群組目前是 FIRING／RECOVERED／FLAPPING）、`record_completeness`（外部紀錄是否齊全）。
+輔助欄位（不是狀態）：`blocked_reason`（例如 `LLM_UNAVAILABLE`、`KILL_SWITCH`、`RESOURCE_HOLD`、`RESOURCE_LOCK_WAIT`（等待資源鎖，§19.4）、`JIRA_SYNC_PENDING`，用於顯示「卡在哪裡」，不改變狀態）、`signal_state`（關聯告警群組目前是 FIRING／RECOVERED／FLAPPING）、`record_completeness`（外部紀錄是否齊全）。
 
 ### 3.3 狀態圖
 
@@ -195,7 +199,7 @@ stateDiagram-v2
 | T16 | PENDING_APPROVAL | CLOSURE_REVIEW | 使用者 | 不處理或撤回 |
 | — | PENDING_APPROVAL | （不變） | 無人回應 | **無逾時轉換**；只允許提醒（§8.2） |
 | T17 | APPLYING | VERIFYING | 系統 | CHANGE 已送出且回應有效 |
-| T18 | APPLYING | PENDING_HUMAN | 系統 | FAILED、PARTIAL、UNKNOWN、BLOCKED_*；CHANGE 不重送。D02 一次逾時查核在 APPLYING 內完成 |
+| T18 | APPLYING | PENDING_HUMAN | 系統 | FAILED、PARTIAL、UNKNOWN、BLOCKED_*、資源鎖等待逾時（§19.4）；CHANGE 不重送。D02 一次逾時查核在 APPLYING 內完成 |
 | T19 | VERIFYING | CLOSURE_REVIEW | 系統 | VERIFY 通過（含觀察期）；產生結案草稿 |
 | T20 | VERIFYING | PENDING_HUMAN | 系統 | 驗證失敗或結果不明 |
 | T21 | PENDING_HUMAN | COLLECTING | 使用者 | 要求重新調查；舊執行結果不覆寫 |
@@ -220,7 +224,7 @@ stateDiagram-v2
 
 | 舊表（文件位置） | 新表 | 處理 |
 |---|---|---|
-| `issue`（SD-04.1）、`work_request`（SD-04.1）、`case_record`（SD-14.2） | `work_item` | 合併。欄位：`item_id`（UUID）、`item_no`（單一序列，例如 `OPS-0000001234`；類型不寫進編號，因為類型可以轉換）、`item_type`、`status`、`closure_reason`、`title`、`requestor_principal_id`、`source_kind`（MONITOR／USER／SCHEDULE）、`environment`、`resource_refs`、`parent_item_id`、`duplicate_of`、`blocked_reason`、`signal_state`、`record_completeness`、`current_report_version`、`created_at`、`row_version` |
+| `issue`（SD-04.1）、`work_request`（SD-04.1）、`case_record`（SD-14.2） | `work_item` | 合併。欄位：`item_id`（UUID）、`item_no`（單一序列，例如 `OPS-0000001234`；類型不寫進編號，因為類型可以轉換）、`item_type`、`status`、`closure_reason`、`title`、`requestor_principal_id`、`source_kind`（MONITOR／USER／SCHEDULE）、`environment`、`resource_refs`、`parent_item_id`、`duplicate_of`、`blocked_reason`、`signal_state`、`record_completeness`、`current_report_version`、`created_at`、`updated_at`（任何欄位或關聯異動時更新，供 Web 清單排序，§17）、`status_changed_at`（進入目前狀態的時間）、`row_version` |
 | `case_work`（SD-14.2） | `work_activity` | 保留為工作項目底下的活動紀錄（調查、比對、提案、套用），`mode` 改為 `activity_kind`；**不再有自己的狀態機**，只有 started／finished 與結果 |
 | `issue_label` | `work_item_label` | 改名 |
 | `state_transition`（SD-04.1）中屬於工作項目的部分 | `case_event`（type=`STATE_CHANGED`） | 工作項目狀態歷史只記在 case_event；`state_transition` 只保留給執行層實體 |
@@ -230,6 +234,7 @@ stateDiagram-v2
 | `role_config`／`principal_role`（SD-04.1、SD-03.2） | `principal`（只有身分，沒有角色） | 角色欄位移除（U13） |
 | `investigation`（SD-04.1） | `work_activity`（kind=INVESTIGATION）＋`evidence_record` | 合併 |
 | 新增 | `alert_delivery`、`alert_receipt`、`alert_group`、`alert_group_event`、`work_item_alert_group`、`notification_outbox`、`alert_silence`、`correlation_rule`、`correlation_scope`、`incident_candidate`、`incident_candidate_key`、`incident_candidate_member`、`notification_message`、`monitor_check_state`、`monitor_source`、`monitor_check`、`auto_remediation_rule`、`execution_hold`（擴充 manual 欄位）、`closure_draft` | 見 §5、§7、§9、§13 與設計文件 B |
+| 新增（第四版） | `work_task`（DB 工作佇列）、`resource_lock`、`resource_lock_waiter` | 見 §19、SD-18 |
 
 沿用、不改：`solution_definition`、`execution_plan`、`plan_step`、`command_definition`、`command_execution`、`execution_attempt`、`execution_outbox`、`execution_resolution`、`timeout_check`、`evidence_record`、`resource_catalog` 與 SD-05 的五組資源表、`resource_hold`、`app_core_health`、`health_profile`／`health_sample`、知識相關表。
 
@@ -588,13 +593,15 @@ Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維�
 | NFR-A8 | 資料保存 | alert_receipt 原始 payload 30 天；work_item／case_event／approval／執行紀錄 3 年；health_sample 明細 14 天、彙總 1 年 |
 | NFR-A9 | RPO／RTO | RPO 15 分鐘、RTO 4 小時（從備份還原時兩種 outbox 都先 hold，人工核對） |
 | NFR-A10 | 規模演進 | 不要求 Kafka／RabbitMQ／Redis；PostgreSQL 單庫＋DB worker；超過 NFR-A2 時再評估 |
+| NFR-A11 | Web 回應（建議值，Q26） | work_item 累計 10 萬筆時：清單（預設篩選、每頁 50 筆）P95 ≤ 1 秒；明細首屏 P95 ≤ 2 秒；Qwen、Jira 故障不影響 Web 查閱 |
+| NFR-A12 | 並行推進（U37） | 等待中的工作項目不佔 worker；worker 數量可配置（預設值見 §19.2，Q25）；單一工作項目卡住不影響其他工作項目 |
 
 ---
 
 ## 15. 舊文件中仍然有效、直接沿用的內容
 
 - 技術基準：Java 21、Spring Boot 4.1、Spring AI、Gradle 六角形多模組模組化單體（SD-15）；PostgreSQL 為參考 DB；不以 Kafka／RabbitMQ／Redis 為前提。
-- 單一對外 Bot（Teams 主要入口）＋Web 管理稽核介面；LDAP 認證、Teams 帳號連結、去重鍵與 canonical plan 讀回（SD-14.3 中非角色的部分）。
+- 單一對外 Bot（Teams 主要入口）＋Web 管理稽核介面（Web 檢視見 §17）；LDAP 認證、Teams 帳號連結、去重鍵與 canonical plan 讀回（SD-14.3 中非角色的部分）。
 - MCP → API → VM gateway 路由、無直接 SSH（SD-02.1～02.3）。
 - 方案與執行模型：solution_definition／execution_plan／plan_step／command_execution／attempt；CommandType、CommandResult、CommandExecutionStatus（SA-03.3、SA-04.4）。
 - 單一派送六步、資源互斥、resource_hold、execution_hold、恢復不續跑（SD-07.3～07.6）。
@@ -609,7 +616,15 @@ Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維�
 
 ## 16. 待確認
 
-**目前沒有待確認項目。** 2026-10-26 使用者回覆「全部如建議」，原 Q1～Q21 全部轉為 §0 的決策。之後若出現新的未決事項，再列在這裡。
+第三版時沒有待確認項目（2026-10-26 使用者回覆「全部如建議」，原 Q1～Q21 全部轉為 §0 的決策，對照如下）。第四版新增 Q22～Q26：表內「建議」已先寫進 §17～§19 與 SRS／SA／SD 0.51，使用者確認或改選後轉為 U 決策。
+
+| 編號 | 問題 | 建議 | 替代方案 |
+|---|---|---|---|
+| Q22 | 從 Teams 連結開明細頁、尚未登入時，登入後要回到哪裡 | 回到原本要看的同站頁面（只接受本 App 內部路徑，不接受外部網址）；直接開登入頁才進清單 | 沿用 demo：一律進首頁，使用者再自己點 |
+| Q23 | Web 是否也提供核准、結案確認、補資料、PENDING_HUMAN 後續操作按鈕 | 提供；與 Teams 共用相同 use case、身分與 canonical plan 讀回，每次操作寫稽核 | 本版 Web 只檢視，操作仍在 Teams |
+| Q24 | 資源鎖等待上限 | 30 分鐘，可配置；到期轉 PENDING_HUMAN 並通知，不自動重排 | 不設上限，一直排隊（只在 Web 顯示等待時間） |
+| Q25 | worker 預設值；SD-01.10 原「修改方案 worker 上限 1」等於全平台一次只修一個資源 | 修改 worker 預設 2、唯讀 worker 4、流程推進 worker 8、Qwen 並行 4，全部可配置；同一資源仍由資源鎖保證只有一個 | 維持修改 worker 1（資源鎖只在調大後才有實益） |
+| Q26 | Web 回應時間目標（NFR-A11） | 10 萬筆時清單 P95 ≤ 1 秒、明細 P95 ≤ 2 秒 | 不設數值，只做壓測紀錄 |
 
 | 原編號 | 決策 | 原編號 | 決策 | 原編號 | 決策 |
 |---|---|---|---|---|---|
@@ -622,6 +637,106 @@ Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維�
 | Q7 | U23 | Q14 | U27 | Q21 | U34 |
 
 所有數值仍做成可配置。
+
+---
+
+## 17. Web 介面（U35）
+
+### 17.1 範圍
+
+- 已驗證使用者以公司帳號密碼登入（LDAP bind，§12）；登入後首頁就是工作項目清單。未登入不能看清單、明細或任何工作項目資料。
+- 不分角色（U13）：所有登入者看到相同的清單、明細與安全投影。raw evidence 仍只在受控頁面檢視、每次稽核（U28）；秘密任何情況都不顯示。
+- 本項定義「看」：清單、篩選、明細與時間軸。已決定的其他 Web 操作（事件候選確認與補開單 U31、U33，kill switch §13.2，raw 檢視 U28）沿用同一介面與登入；Web 是否也提供核准與結案確認按鈕見 Q23。
+- Teams 通知裡的工作項目連結可以直接開明細頁；未登入先登入（登入後回到哪裡見 Q22）。
+- Web 與 Teams 讀同一份資料，不另建「Web 專用」狀態；畫面上的狀態就是 WorkItemStatus（§3.2）加 `blocked_reason`。
+
+### 17.2 清單與篩選
+
+| 項目 | 規則 |
+|---|---|
+| 預設 | 只列進行中（status ≠ CLOSED），依最後更新時間新到舊 |
+| 顯示欄位 | item_no、title、item_type、WorkItemStatus（中文名＋代碼）、`blocked_reason`（有才顯示，例如「等待資源鎖」）、相關服務、環境、signal_state、建立時間、最後更新時間、在目前狀態已停留多久 |
+| 系統篩選 | 「系統」＝工作項目的服務標籤（`work_item_label`，SA-05.1）；可多選，語意為「含任一」（ANY）；另可選「未分類」（UNCLASSIFIED）與「確認無服務」（NONE）。不以服務名稱字串比對 |
+| 時間篩選 | 起訖時間；以 Asia/Taipei 輸入與顯示，以 UTC 保存與比較；可選依「建立時間」或「最後更新時間」 |
+| 狀態篩選 | WorkItemStatus 多選；勾選「含已結案」才列 CLOSED |
+| 其他條件 | item_type、關鍵字（item_no／title）可選 |
+| 分頁 | 每頁 20／50／100，預設 50；排序：最後更新時間或建立時間；同一服務多標籤不造成重複列 |
+| 更新 | 清單每 15 秒自動重新整理目前這一頁（可關閉）；不使用 WebSocket |
+
+### 17.3 明細
+
+| 區塊 | 內容 |
+|---|---|
+| 基本資料 | item_no、類型、WorkItemStatus、`blocked_reason`、資源、服務、環境、signal_state、Jira 連結與同步狀態（record_completeness） |
+| 告警內容 | 關聯告警群組（alert_key、severity、occurrence_count、首次／最後發生、signal_state）與標準事件的安全投影；原始 payload 走 raw 受控頁並稽核 |
+| 調查資料 | work_activity（INVESTIGATION／MATCHING）摘要、證據清單（安全投影）、引用的知識與版本、已排除原因 |
+| 解法 | 提案／execution_plan 各版本、步驟與預覽、計畫 hash、是否命中白名單、執行結果與 VERIFY 結果 |
+| 核准紀錄 | 核准者、時間、self_approved（畫面標「自行核准」）、authorization_source、綁定的 plan 版本與 hash；待核准時顯示已等待時間 |
+| 結案草稿 | closure_draft 各版本、確認／退回者、時間與原因 |
+| 時間軸 | case_event（狀態變更、核准、hold、raw 檢視等）與 work_activity（開始／結束）合併，依發生時間排序 |
+| 資源鎖 | 正在持有或等待的資源鎖：資源、持有的工作項目、排第幾位、等待期限（§19.4） |
+
+## 18. 技術選型（U36）
+
+Spring Boot 生態系由使用者指定；其餘依本平台架構（模組化單體、PostgreSQL 單庫＋DB worker、無訊息中介，NFR-A10）選擇。
+
+| 層 | 選擇 | 理由 |
+|---|---|---|
+| 語言／框架 | Java 21、Spring Boot 4.1（沿用 SD-15） | 已定 |
+| 資料庫 | PostgreSQL（版本依 SD-14.8） | 唯一索引與部分唯一索引做去重（設計文件 B）；JSONB 保存原始 payload；`SELECT … FOR UPDATE SKIP LOCKED` 做多 worker 佇列；交易內條件更新做發送許可 |
+| Schema 版本 | Flyway | 版本化 SQL migration，可審查、可重放；由部署身分執行，App runtime 不持有 DDL 權限，Hibernate 只做 `validate` |
+| 資料存取 | Spring Data JPA（Hibernate）；清單篩選用 Specification＋分頁 | 與 Spring 生態一致；條件組合簡單。需要複雜報表 SQL 時再評估 jOOQ，不同時引入兩套 |
+| 登入 | Spring Security 表單登入＋伺服器端 session；帳密以 LDAP bind 驗證（SD-03.1） | 沿用 `b8a23d4` 管理登入 demo 的 filter chain 做法；之後可選加 OIDC（Keycloak 或 AD FS／Entra 接 LDAP／AD），只換登入方式，不改 principal 與資料表 |
+| 前端 | Thymeleaf＋htmx，與 App 同一部署 | 使用者選定；伺服器端渲染、局部更新清單與明細區塊，不需獨立前端 build；htmx 檔案放 App 靜態資源，不用 CDN |
+| 測試 | Testcontainers PostgreSQL 做整合測試 | H2 不支援部分索引與 JSONB，不能代表 PostgreSQL 行為；H2 只留給 demo profile |
+| 不引入 | Kafka／RabbitMQ／Redis、React／Vue SPA、獨立 read DB | NFR-A10；使用者選定前端；清單直接查主庫 |
+
+## 19. 並行推進與資源鎖（U37、U38）
+
+### 19.1 原則
+
+- 每個工作項目獨立推進；不同工作項目可以同時處在不同狀態、由不同 worker 處理。
+- 同一工作項目同一時間只有一個步驟在處理（單一進行中的佇列任務＋`row_version` 樂觀鎖），兩個 worker 不會同時推進同一張單。
+- 推進由 DB 佇列 `work_task` 驅動：多個 worker 以 `SELECT … FOR UPDATE SKIP LOCKED` 競爭領取（競爭消費者 10.7，p.370）；WorkItemCoordinator 仍是唯一決定下一步的地方（過程管理器 7.12，p.219）。
+- 程序重啟：只做內部判斷、不派送命令的任務（例如重算下一步、產生固定摘要）可以重新排入；可能已派送 QUERY／VERIFY／CHANGE 的任務不接續，依 SD-07.5 轉人工。
+
+### 19.2 等待時不佔 worker
+
+| 等待中 | 保存的狀態 | 何時喚醒 |
+|---|---|---|
+| 核准（PENDING_APPROVAL） | 提案版本、canonical plan | 使用者核准或退回（無逾時，U10） |
+| 補資料（WAITING_INPUT） | 缺少的欄位、追問內容 | 使用者回覆 |
+| Qwen 回應 | AI 請求紀錄；Qwen 呼叫在獨立的並行上限內執行 | 回應寫回後排入下一步；Qwen 不可用標 `LLM_UNAVAILABLE`（U14） |
+| 結案確認（CLOSURE_REVIEW） | 草稿版本 | 使用者確認或退回 |
+| 資源鎖（§19.4） | 排隊紀錄 | 鎖釋放時依順序喚醒 |
+| VERIFY 取樣間隔 | 下次取樣時間 | 時間到 |
+
+worker 數量全部可配置。建議預設（Q25）：流程推進 8、唯讀 QUERY／VERIFY 4、修改（CHANGE）2、Qwen 並行 4、Jira／文件同步 2。
+
+### 19.3 資源鎖
+
+- 範圍：方案的整份影響資源集合（SD-07.3），以標準 `resource_id` 為鍵，不用服務名稱、hostname 或 IP。
+- 期間：進入 APPLYING、派送前取得；持有到 VERIFYING 結束且結果已可靠保存。結果 UNKNOWN／PARTIAL 或可能仍有在途效果時，不直接放掉，而是轉成 resource_hold（§13.2）。
+- 全有或全無：多個資源依 `resource_id` 排序在同一交易一次取得；拿不到全部就一個都不拿，改為排隊。不會出現「各拿一半互等」的死鎖。
+- 不影響其他資源：不同資源的工作項目各自進 APPLYING。唯讀調查、QUERY、監控與健康檢查不受資源鎖限制。
+- 用 DB 表 `resource_lock`，不用 PostgreSQL advisory lock：鎖要跨越多次交易與外部呼叫、要在 Web 看得到誰持有、重啟後還在；advisory lock 綁在 DB 連線上，連線一斷就自動釋放，可能在舊命令還在跑時放行第二個變更。
+
+### 19.4 第二張單在等什麼
+
+- 已核准（或命中白名單）的第二張單照常進 APPLYING，但根執行停在 QUEUED；工作項目標 `blocked_reason=RESOURCE_LOCK_WAIT`，不改狀態、不佔 worker。Web 顯示「等待資源鎖：由 OPS-… 持有，排第 N 位」。
+- 依到達順序（FIFO）；多資源的單要在每個資源上都輪到才取得，避免一直被插隊。
+- 取得鎖後一律重做派送前檢查（基準、kill switch、resource_hold）：若第一張單已經修好，可能得到 `SKIPPED_ALREADY_APPLIED` 或 `BLOCKED_STATE_CHANGED`，依 SA-01.2 既有規則處理，不硬做。
+- 等待上限（建議 30 分鐘，Q24）：到期仍未取得 → 根執行 CANCELLED（可證明未派送），工作項目經 T18 轉 PENDING_HUMAN 並通知；不自動重排。
+- 核准無逾時（U10）不受影響：排隊是核准之後的事；等待期間資源出現 resource_hold 或 TARGET kill switch，照 §13.2 擋下。
+
+### 19.5 逾時與失效的鎖
+
+- 鎖有租約（建議 2 分鐘，每 30 秒續約），由持有它的 App 執行個體與 owner epoch 續約；這個租約只用來發現「持有者可能已不在」，不是自動放行的計時器。
+- 租約過期時依持有執行的狀態決定：
+  - 持有的執行已是終態且結果已保存 → 系統自動釋放，喚醒下一位。
+  - 持有的執行還沒取得任何 CHANGE 發送許可（QUEUED／PRECHECKING）→ 釋放；該執行 CANCELLED，工作項目轉 PENDING_HUMAN。
+  - 其他（可能已派送、RUNNING、VERIFYING 中斷）→ 不釋放成「可用」：轉成 resource_hold（origin=SYSTEM），持有的工作項目轉 PENDING_HUMAN 並通知；排隊者繼續等到上限。由使用者查明後依 §13.2 解除（SD-07.3、SD-07.5）。
+- 持有時間超過方案總期限加寬限：只告警並在 Web 標示，不強制釋放。
 
 ---
 
@@ -715,8 +830,10 @@ Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維�
 | 82 | SD | SD-14.7 D10 Jira 映射（OPEN／ACTIVE／WAITING_APPROVAL…） | 修改 | 改用 §10.4 單一映射 |
 | 83 | SD | SD-14.9 測試 fixture A01 ADMIN／N01 NORMAL_USER 及相關案例 | 修改 | U13；新增去重、白名單、結案確認測試 |
 | 84 | SD | SD-14.10 「D08 ADMIN 逐案啟動」、「14 待確認：已決定政策轉已確認」 | 修改 | U13；政策以已對齊需求 §0 為準 |
+| 85 | SD | SD-01.10「修改方案 worker 上限 1」 | 修改 | U37、U38：改為可配置，同一資源由資源鎖保證互斥（建議預設 2，Q25） |
+| 86 | 程式 | `web` 模組 `SecurityConfiguration` 依 `config/roles.yml` 拒絕沒有角色的帳號；`ManagementWebSecurityConfiguration` 只在 `demo` profile | 修改 | U13、U35：登入只看 LDAP 驗證與登入範圍，不查角色；Web 登入 chain 改為正式設定（SD-17.3） |
 
-合計 **84 項**：刪除 14 項、取代 4 項、修改 65 項、新增 1 項。主題分布大致為：角色／權限 約 30 項、狀態機與資料表合併 約 10 項、逐案同意與 Jira 補送矛盾 約 10 項、Qwen 全域停止 6 項、故障後停止監控與禁止自動修復 約 12 項、分期／多 bot／版本與 banner 約 12 項。
+合計 **86 項**：刪除 14 項、取代 4 項、修改 67 項、新增 1 項（第四版新增 85、86 兩項）。主題分布大致為：角色／權限 約 30 項、狀態機與資料表合併 約 10 項、逐案同意與 Jira 補送矛盾 約 10 項、Qwen 全域停止 6 項、故障後停止監控與禁止自動修復 約 12 項、分期／多 bot／版本與 banner 約 12 項。
 
 ## 附錄 B：EIP 模式對照
 
@@ -738,4 +855,6 @@ Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維�
 | correlation_id／causation_id | 關聯標識符（5.7，p.107） |
 | case_event、稽核 | 消息歷史（11.5，p.402）、消息存儲庫（11.6，p.405） |
 | kill switch、管理 API | 控制總線（11.2，p.396） |
+| `work_task` 佇列，多個 worker 以 SKIP LOCKED 領取（§19.1） | 競爭消費者（10.7，p.370） |
+| 等待核准／補資料／Qwen 時保存狀態、事件到達才喚醒（§19.2） | 過程管理器（7.12，p.219） |
 | 監控來源自我檢查（合成探測） | 測試消息（11.8，p.416） |
