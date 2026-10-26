@@ -1,6 +1,6 @@
 # DevOps 智慧維運應用系統設計規格書
 
-系統設計草案｜設計版本 0.51｜依據 SRS／SA 0.51 與已對齊需求第四版（U1～U38）｜2026 年 10 月 26 日（Asia/Taipei）
+系統設計草案｜設計版本 0.52｜依據 SRS／SA 0.52 與已對齊需求第五版（U1～U42）｜2026 年 10 月 26 日（Asia/Taipei）
 
 ## 文件定位
 
@@ -40,6 +40,7 @@
 | SD-16 | 初始化設定、受管服務 catalog 與六模組 demo |
 | SD-17 | Web 介面與技術選型：登入、清單／明細、read model、索引、Flyway／JPA（U35、U36） |
 | SD-18 | 並行推進與資源鎖：work_task 佇列、worker 設定、resource_lock 資料結構、等待與失效處理（U37、U38） |
+| SD-19 | 商用模型人工接管、接管包、寫回與強制結案（U39～U42） |
 | 版本紀錄 | 0.50 與舊版摘要 |
 
 # SD-01 系統架構與元件責任
@@ -87,7 +88,7 @@
 |---|---|---|
 | 應用結構 | 同一 Spring Boot 部署包，按業務模組分包；核心透過介面使用外部 adapter。 | 可在同一 DB 交易保存工作、授權與狀態，先控制部署及故障面；禁止把所有邏輯堆在對話 Controller。 |
 | AI 框架 | Spring AI 封裝公司 Qwen，集中於 AiAnalysisService。 | Qwen 輸出受驗證的候選與解釋，WorkflowService 決定下一個已發布步驟。 |
-| 工作流 | 應用程式實作 WorkItemStatus 轉移（T01～T26）與版本化步驟／分支。 | 不引入會自動重試、接管或續跑的外部流程引擎。 |
+| 工作流 | 應用程式實作 WorkItemStatus 轉移（T01～T28）與版本化步驟／分支。 | 不引入會自動重試、接管或續跑的外部流程引擎。 |
 | 資料庫 | 以 PostgreSQL 作為本設計的參考實作 DB，使用關聯、交易、唯一限制及條件更新。 | 這是架構選型建議，非公司已提供 DB 的宣告。若公司指定其他關聯式 DB，須驗證相同交易／互斥／原文保存契約後替換。 |
 | 正常工作排隊 | 同 DB 的 execution_outbox／執行狀態；程序內有界 worker 處理正常首次派送。 | 記憶體只負責喚醒；持久資料決定能否派送。故障／重啟後不把 DB 待辦當作可自動重播工作。 |
 | 文件查詢 | 已授權文件 metadata、精確欄位及全文檢索介面。 | 向量檢索（pgvector）經 PoC 驗證後才啟用；中文與錯誤碼搜尋品質以實際文件驗收。 |
@@ -205,6 +206,10 @@ Web 與管理介面採同源 HTTPS、伺服器端 session 與 CSRF 保護。瀏�
 | `GET /api/v1/plans/{planId}` | 回傳方案投影；核准頁列出完整實例、影響、版本與 digest。 |
 | `POST /api/v1/approvals/{approvalId}/decision` | 提交 APPROVE／REJECT、plan_version、digest 與請求識別；後端核對實例與根 execution，重複提交回傳同一結果；自行核准標示（U22）。 |
 | `POST /api/v1/work-items/{itemId}/closure-drafts/{version}/confirm` | 確認或退回結案草稿（T25／T26）。 |
+| `POST /api/v1/work-items/{itemId}/takeover` | 人工接管（T27）；body：tool、model、reason、`handover`（是否接手他人接管）；只接受 session 使用者，不接受服務帳號（SD-19.3）。 |
+| `POST /api/v1/work-items/{itemId}/takeover/packages` ／ `GET .../takeover/packages/{version}/download` | 產生遮罩後的接管包；下載連結綁 session、一次性、15 分鐘，每次下載稽核（SD-19.4）。 |
+| `POST /api/v1/work-items/{itemId}/takeover/writebacks` | 寫回摘要、根因、已執行處置與驗證證據；經 SecretFilter，存低信任證據（SD-19.5）。 |
+| `POST /api/v1/work-items/{itemId}/force-close` ／ `.../takeover/release` | 強制結案（T28，`FORCED_BY_COMMERCIAL_MODEL`）或結束接管回 PENDING_HUMAN；帶 `row_version` 與 `confirm_item_no`（SD-19.6）。 |
 | `POST /api/v1/incident-candidates/{candidateId}/decision` | 確認同一事件、拆分、移出或 DISMISSED（設計文件 B §5，U30～U34）。 |
 | `GET /api/v1/investigations/{id}/report` | 產生安全投影報告。 |
 | `GET /api/v1/evidence/{evidenceId}/raw` | 已驗證使用者受控檢視，逐次稽核，包含分段下載；秘密欄位不顯示；不使用可公開存取的原檔 URL（U28）。 |
@@ -440,10 +445,10 @@ Jira／Confluence、通知與外部共用報告遵守紀錄政策（SYSTEM_RECOR
 
 | 概念表／Model | 獨立主鍵 | 核心資料與關聯 |
 |---|---|---|
-| `work_item` | `item_id` | 合併舊 issue／work_request／case_record。`item_no`（單一序列 `OPS-…`）、`item_type`（INCIDENT／REQUIREMENT／DISCUSSION／INQUIRY）、`status`（WorkItemStatus）、`closure_reason`、`title`、`requestor_principal_id`、`source_kind`（MONITOR／USER／SCHEDULE）、`environment`、`resource_refs`、`parent_item_id`、`duplicate_of`、`blocked_reason`、`signal_state`、`record_completeness`、`current_report_version`、服務關聯狀態、`created_at`、`updated_at`、`status_changed_at`、`row_version`（Web 清單索引見 SD-17.5）。 |
-| `work_activity` | `activity_id` | 工作項目下的活動紀錄（`activity_kind`：INVESTIGATION／MATCHING／PROPOSAL／APPLY／DISCUSSION），只有 started／finished 與結果，不另設狀態機；調查表單見 SD-06。 |
-| `case_event` | `event_id` | 只追加的工作項目事件與稽核：STATE_CHANGED（舊、新狀態、轉換 T01～T26、操作者、原因）、核准、規則命中、hold、raw 檢視、事件候選決定、外部同步等；帶 correlation_id（= item_id）與 causation_id。 |
-| `closure_draft` | `draft_id` + version | 結案草稿：closure_reason、摘要、驗證證據參照、產生來源（AI／固定範本）、確認者與時間、退回原因（AR §9）。 |
+| `work_item` | `item_id` | 合併舊 issue／work_request／case_record。`item_no`（單一序列 `OPS-…`）、`item_type`（INCIDENT／REQUIREMENT／DISCUSSION／INQUIRY）、`status`（WorkItemStatus）、`closure_reason`、`title`、`requestor_principal_id`、`source_kind`（MONITOR／USER／SCHEDULE）、`environment`、`resource_refs`、`parent_item_id`、`duplicate_of`、`blocked_reason`、`signal_state`、`record_completeness`、`current_report_version`、服務關聯狀態、`created_at`、`updated_at`、`status_changed_at`、`active_takeover_id`（接管中時指向 `manual_takeover`，SD-19.1）、`row_version`（Web 清單索引見 SD-17.5）。 |
+| `work_activity` | `activity_id` | 工作項目下的活動紀錄（`activity_kind`：INVESTIGATION／MATCHING／PROPOSAL／APPLY／DISCUSSION／TAKEOVER），只有 started／finished 與結果，不另設狀態機；調查表單見 SD-06。 |
+| `case_event` | `event_id` | 只追加的工作項目事件與稽核：STATE_CHANGED（舊、新狀態、轉換 T01～T28、操作者、原因）、核准、規則命中、hold、raw 檢視、事件候選決定、外部同步、人工接管（TAKEOVER_STARTED／TAKEOVER_HANDED_OVER／TAKEOVER_PACKAGE_CREATED／TAKEOVER_PACKAGE_DOWNLOADED／TAKEOVER_WRITEBACK_SUBMITTED／FORCE_CLOSED／TAKEOVER_RELEASED，SD-19）等；帶 correlation_id（= item_id）與 causation_id。 |
+| `closure_draft` | `draft_id` + version | 結案草稿：closure_reason、摘要、驗證證據參照、產生來源（AI／固定範本／MANUAL_TAKEOVER）、確認者與時間、退回原因（AR §9）。 |
 | `command_definition` | `command_definition_id` | 固定命令代碼、版本、類型、參數與驗證規格參照；可被跨服務情境共用。 |
 | `verification_policy` | `verification_policy_id` | 版本化的固定檢查、效果與健康條件、等待／輪詢／期限、成功輪數、證據新鮮度、查詢預算及觀察設定；執行保留實際快照。 |
 | `verification_sample` | `verification_sample_id` | execution ID、目標資源、規格版本、取樣序號及時間、probe_result、HealthStatus、逐項判定與原始證據；不以服務 labels 作主鍵。 |
@@ -470,7 +475,7 @@ Jira／Confluence、通知與外部共用報告遵守紀錄政策（SYSTEM_RECOR
 | `vm_service_binding` | `binding_id` | vm／instance 關聯、用途、來源、有效時間與版本，支援多對多。 |
 | `context_snapshot` | `context_id` | 啟動／工作使用的來源與版本清單、目錄及有效性檢查結果；不存入連線秘密值供模型讀取。 |
 | `resource_hold` | `hold_id` | resource／影響範圍、來源 execution、停止原因、持有及解除歷程；不隨工作項目結案或租約過期消失。 |
-| `work_task` | `task_id` | 工作項目推進佇列：item、task_kind、run_after、READY／CLAIMED／DONE／FAILED、領取者與租約、dedup_key（SD-18.1）。 |
+| `work_task` | `task_id` | 工作項目推進佇列：item、task_kind、run_after、READY／CLAIMED／DONE／FAILED／CANCELLED（人工接管時取消，SD-19.3）、領取者與租約、dedup_key（SD-18.1）。 |
 | `resource_lock`／`resource_lock_waiter` | `resource_id`／`waiter_id` | 每個標準資源的活動變更鎖（持有的 item／execution、owner epoch、租約）與依序排隊紀錄（SD-18.3）。 |
 | `execution_resolution` | `resolution_id` | 人工後續、原 execution／sync_request、已查明效果與證據、操作者、時間及相關 hold；不覆寫原終止結果。 |
 | `execution_outbox` | `outbox_id` | 正常首次派送的固定工作／執行識別與處理狀態，和意圖交易保存；重送僅檢查原狀態，故障工作不喚醒、不接續。 |
@@ -1391,13 +1396,13 @@ flowchart TD
 |---|---|---|
 | teams | TeamsIngress.verify、IdentityLink.resolve、CardAction.submit；只產生可信應用請求 | 不直連維運工具、不從卡片 body 決定身分或核准 |
 | monitoring | AlertIngestService.receive、Deduplicator、IncidentCandidateService、MonitorScheduler；設計文件 B | 不派送 CHANGE；只開案、通知、關聯 |
-| work | WorkItemCoordinator.accept、transition、addActivity、recordEvent；單一 WorkItemStatus 狀態機（T01～T26）與 work_activity | 不修改執行紀錄的歷史結果 |
+| work | WorkItemCoordinator.accept、transition、addActivity、recordEvent；單一 WorkItemStatus 狀態機（T01～T28）與 work_activity | 不修改執行紀錄的歷史結果 |
 | service-request | FormRegistry.validate、TemplatePlanner.preview；標準表單與固定計畫 | 不接受任意 shell／SQL 或自動核准 |
 | knowledge | KnowledgeRepository、KnowledgeSearch、DraftReviewService、IndexPublisher | 模型不能發布正式知識或命令 |
 | reasoning | AnalysisPort.investigate、matchKnownSolution、draftKnowledge；Spring AI adapter | 無連線秘密與直接工具執行權 |
 | external-assist | ExportPolicy、ExternalModelGateway、CaseInvestigationApi | 無 CHANGE／approval／raw／跨案對話權 |
 | execution | WorkflowService、CommandDispatcher、TimeoutCheckCoordinator、ResourceLockService（SD-18） | 不重送 CHANGE；不把查核當成續跑許可；鎖租約到期不等於可放行 |
-| web-ui | WorkItemListController、WorkItemDetailController → WorkItemQueryUseCase（SD-17） | 只讀；不直接存取 adapter entity 或 DB；不顯示秘密 |
+| web-ui | WorkItemListController、WorkItemDetailController → WorkItemQueryUseCase（SD-17）；例外：TakeoverController → TakeoverUseCase（SD-19） | 除人工接管表單外只讀；不直接存取 adapter entity 或 DB；不顯示秘密 |
 | records | RecordPolicy、RecordProjector、ExternalSyncWorker、JiraTransitionPlanner、DocumentPublisher | 只寫案件紀錄；不能操作 Jenkins／DB／VM |
 
 ## SD-14.2 工作項目、方案與例外查核資料契約
@@ -1514,7 +1519,7 @@ Qwen 對話模型不等於 embedding 模型。`embedding_profile` 保存 provide
 
 POST 使用 Idempotency-Key，唯一鍵為 client＋grant＋endpoint＋key；相同 key 不同 payload 拒絕，相同 key 回原 run，不能再次查工具。所有分頁／模型／工具耗用同一持久 budget，不因外部 handoff、重送或切 provider 清零。外部 callback／文字不能新增能力或擴大 scope；外部結果仍經 schema、引用、敏感與注入檢查。
 
-Qwen 不可用時 AI 步驟暫停（U14），核心故障停止派送；不以 external provider 為技術 fallback。外部步驟失敗也不自動換 provider、重試或回到另一模型接續；保存既有資料及人工待辦。配置已核准 endpoint allowlist 與網路出口，禁止模型 supplied URL／redirect 跳至未允許目的地。
+Qwen 不可用時 AI 步驟暫停（U14），核心故障停止派送；不以 external provider 為技術 fallback；使用者逐案的商用模型人工接管（SD-19）由人在平台外操作，平台不呼叫該模型，只用目的 `MANUAL_TAKEOVER` 的 grant 控管接管包外送。外部步驟失敗也不自動換 provider、重試或回到另一模型接續；保存既有資料及人工待辦。配置已核准 endpoint allowlist 與網路出口，禁止模型 supplied URL／redirect 跳至未允許目的地。
 
 ## SD-14.6 標準申請、固定模板與資源擴充
 
@@ -1828,7 +1833,7 @@ flowchart LR
 | `GET /`、`GET /home` | 轉到 `/work-items` |
 | `GET /work-items` | 清單；查詢參數 `service`（可多值，`UNCLASSIFIED`／`NONE` 為保留值）、`from`、`to`、`timeField`（created／updated）、`status`（可多值）、`includeClosed`、`type`、`q`、`page`、`size`（20／50／100）、`sort`。帶 `HX-Request` 標頭只回清單片段，否則回整頁；htmx 以 `hx-push-url` 同步網址 |
 | `GET /work-items/{itemNo}` | 明細整頁（基本資料與時間軸第一頁） |
-| `GET /work-items/{itemNo}/sections/{section}` | 明細區塊片段：`alerts`、`investigation`、`plans`、`approvals`、`closure`、`locks`；以 `hx-trigger="revealed"` 延遲載入 |
+| `GET /work-items/{itemNo}/sections/{section}` | 明細區塊片段：`alerts`、`investigation`、`plans`、`approvals`、`closure`、`locks`、`takeover`（SD-19.7）；以 `hx-trigger="revealed"` 延遲載入 |
 | `GET /work-items/{itemNo}/timeline?before=…` | 時間軸下一頁片段 |
 | `/static/**`、`/vendor/**` | 靜態檔，不需登入、不含資料 |
 
@@ -1907,7 +1912,7 @@ CREATE TABLE work_task (
   task_kind     varchar(40) NOT NULL,      -- ADVANCE／AI_RESULT／INPUT_RECEIVED／APPROVAL_DECIDED／LOCK_GRANTED／VERIFY_SAMPLE／CLOSURE_DECIDED／LOCK_WAIT_TIMEOUT
   dispatching   boolean NOT NULL,          -- 此任務是否可能派送 QUERY／VERIFY／CHANGE
   run_after     timestamptz NOT NULL DEFAULT now(),
-  status        varchar(16) NOT NULL,      -- READY／CLAIMED／DONE／FAILED
+  status        varchar(16) NOT NULL,      -- READY／CLAIMED／DONE／FAILED／CANCELLED
   claimed_by    varchar(100),              -- 實例 ID＋worker
   owner_epoch   bigint,
   lease_until   timestamptz,
@@ -2041,10 +2046,154 @@ CREATE INDEX ix_resource_lock_lease ON resource_lock (lease_until);
 
 以上以 Testcontainers PostgreSQL 跑真實 SKIP LOCKED 與唯一索引；併發測試以多執行緒＋`CountDownLatch` 製造競態，模式同設計文件 B 的 T1～T6。
 
+# SD-19 商用模型人工接管與強制結案
+
+對應 SRS FR-47～50、CON-10、AC-27～30，SA-13；需求依據 AR §20（U39～U42）。平台不呼叫商用模型、不經 LiteLLM、不保存 API key，也不發給 CLI 回呼用的機器 token；本節只設計接管紀錄、接管包、寫回與結案。
+
+## SD-19.1 資料表（Flyway）
+
+```sql
+CREATE TABLE manual_takeover (
+  takeover_id      uuid PRIMARY KEY,
+  item_id          uuid NOT NULL REFERENCES work_item(item_id),
+  status           varchar(16) NOT NULL,      -- ACTIVE／HANDED_OVER／RELEASED／CLOSED
+  operator         varchar(128) NOT NULL,     -- session principal
+  tool             varchar(32) NOT NULL,      -- 允許清單，例如 CLAUDE_CODE／CODEX_CLI（AR Q27）
+  model            varchar(64) NOT NULL,
+  reason           text NOT NULL,
+  from_status      varchar(32) NOT NULL,      -- 接管前的 WorkItemStatus
+  activity_id      uuid NOT NULL,             -- work_activity（kind=TAKEOVER）
+  previous_id      uuid REFERENCES manual_takeover(takeover_id),
+  started_at       timestamptz NOT NULL,
+  ended_at         timestamptz,
+  end_reason       text
+);
+CREATE UNIQUE INDEX ux_takeover_active ON manual_takeover(item_id) WHERE status = 'ACTIVE';
+
+CREATE TABLE takeover_package (
+  takeover_id      uuid NOT NULL REFERENCES manual_takeover(takeover_id),
+  version          int NOT NULL,
+  grant_id         uuid NOT NULL,             -- ExternalAssistGrant，purpose=MANUAL_TAKEOVER
+  export_policy_version varchar(32) NOT NULL,
+  masking_report   jsonb NOT NULL,            -- 各規則命中次數，不含原值
+  sha256           char(64) NOT NULL,
+  storage_ref      varchar(256) NOT NULL,     -- 伺服器端物件，不給公開 URL
+  created_by       varchar(128) NOT NULL,
+  created_at       timestamptz NOT NULL,
+  expires_at       timestamptz NOT NULL,
+  PRIMARY KEY (takeover_id, version)
+);
+
+CREATE TABLE takeover_writeback (
+  takeover_id      uuid NOT NULL REFERENCES manual_takeover(takeover_id),
+  version          int NOT NULL,
+  package_version  int,                       -- 依據哪一版接管包
+  summary          text NOT NULL,
+  root_cause       text,
+  actions          jsonb NOT NULL,            -- [{scope:PLATFORM|OFF_PLATFORM, target, at, actor, result, execution_id?}]
+  evidence_ids     uuid[] NOT NULL,           -- evidence_record（origin=MANUAL_TAKEOVER、低信任）
+  operator_ack     boolean NOT NULL,          -- 有 OFF_PLATFORM 時必須 true
+  submitted_by     varchar(128) NOT NULL,
+  submitted_at     timestamptz NOT NULL,
+  PRIMARY KEY (takeover_id, version)
+);
+
+ALTER TABLE work_item ADD COLUMN active_takeover_id uuid REFERENCES manual_takeover(takeover_id);
+```
+
+`evidence_record` 增加 `origin` 值 `MANUAL_TAKEOVER`；`closure_draft.source` 增加 `MANUAL_TAKEOVER`；`work_task.status` 增加 `CANCELLED`。
+
+## SD-19.2 模組與 port
+
+| 位置 | 元件 |
+|---|---|
+| `work` 模組 application | `TakeoverUseCase`（start、handover、createPackage、download、submitWriteback、forceClose、release） |
+| port out | `TakeoverRepository`、`PackageStore`（伺服器端檔案或物件儲存）、`ExportMasker`（沿用 EXTERNAL_EXPORT_SAFE 與 SecretFilter）、`ExternalAssistGrantPort`、`WorkTaskQueue`、`ExecutionControlPort`、`JiraSyncPort` |
+| web-ui | `TakeoverController`（Thymeleaf 片段＋htmx，POST＋CSRF） |
+| api | `TakeoverApiController`（SD-01.7，同源 session＋CSRF） |
+
+## SD-19.3 接管（T27）
+
+單一交易，以 `work_item.row_version` 樂觀鎖：
+
+1. 檢查 session 使用者、`takeover.enabled`（未啟用時仍允許接管，只停用接管包）、item 非 CLOSED；tool 必須在允許清單。
+2. 已有 ACTIVE：沒帶 `handover=true` 回 409；帶了則前一筆改 HANDED_OVER，新紀錄 `previous_id` 指向它，寫 TAKEOVER_HANDED_OVER。
+3. 建立 `work_activity`（kind=TAKEOVER）與 `manual_takeover`（ACTIVE），設定 `work_item.active_takeover_id`。
+4. 該 item READY 的 `work_task` 改 CANCELLED（VERIFY_SAMPLE 例外，照排定跑完但不觸發 T19／T20）；CLAIMED 者不中斷，worker 完成時檢查 `active_takeover_id`，Qwen 結果只寫證據並標 `IGNORED_AFTER_TAKEOVER`；清除 `LLM_UNAVAILABLE`。
+5. 未決 approval 改 SUPERSEDED；根執行在 QUEUED／PRECHECKING／WAITING_LOCK 者改 CANCELLED、waiter CANCELLED、釋放鎖（SD-18.4）；已有發送許可或 RUNNING 以後者不動，由 SD-18.5 處理。
+6. 若不是 PENDING_HUMAN，寫 STATE_CHANGED（T27）轉 PENDING_HUMAN；寫 TAKEOVER_STARTED（tool、model、reason、from_status）。
+
+所有 AI 排程點（work_task 建立、Qwen 回應處理）先檢查 `active_takeover_id IS NULL`，否則不建立、不推進；Qwen 恢復時不重建被取消的任務。
+
+## SD-19.4 接管包與遮罩
+
+1. 需要 `takeover.enabled=true` 與 ACTIVE 接管；建立 ExternalAssistGrant（purpose=MANUAL_TAKEOVER，allowed_evidence_ids＝本案安全投影，expires_at 15 分鐘）。
+2. 組裝內容（檔案清單以 AR §20.4 為準）：`README.md`、`item.json`、`alerts.json`、`timeline.json`、`evidence/`（EXTERNAL_EXPORT_SAFE 投影，不含 raw）、`proposals.json`、`rules.json`、`writeback-template.json`、`manifest.json`（版本、grant、policy 版本、每個檔案 SHA-256、遮罩統計、排除數）。
+3. 每個欄位經 `ExportMasker`：只輸出 allowlist 欄位；文字內容依 AR §20.4 遮罩表換成 `[REDACTED:<類別>]`、`[REDACTED]`、`[SECRET_REF]`、`user-<短碼>`；hostname／IP 是否換 `res-<短碼>` 別名依 AR Q28 設定 `takeover.alias-hosts`（對照表只存伺服器端）；無法判定的高風險片段整段排除；他案資料不帶入。
+4. 任一元件失敗或 masking report 不完整 → 拒絕產生，不寫部分檔案；成功時寫 `takeover_package` 與 TAKEOVER_PACKAGE_CREATED（含 sha256、masking report）。
+5. 下載：回傳綁 session 的一次性 token，有效 15 分鐘；`GET .../download?token=…` 驗證後串流 zip（`Content-Disposition: attachment`、`Cache-Control: no-store`），寫 TAKEOVER_PACKAGE_DOWNLOADED。
+
+## SD-19.5 寫回
+
+- 表單或 JSON：summary（必填）、root_cause、actions[]、附件（文字或檔案，大小上限沿用 evidence 設定）、package_version、operator_ack。
+- 所有文字與附件經 SecretFilter 後才存；附件存 `evidence_record`（origin=MANUAL_TAKEOVER、trust=LOW）；不解析成命令、不觸發規則。
+- 有 `scope=OFF_PLATFORM` 時 `operator_ack` 必須 true，且每筆寫 `MANUAL_ACTION` case_event；`scope=PLATFORM` 必須帶本案的 execution_id。
+- 寫 `takeover_writeback`（新版本）與 TAKEOVER_WRITEBACK_SUBMITTED。
+- 接管中經平台執行修改：使用者經 T22 送出只引用已發布 command／solution 的計畫 → T11 → PENDING_APPROVAL；白名單比對在 `active_takeover_id` 非空時跳過（AR Q31）；後續照 SD-07、SD-18。T21（重新調查）在接管中回 409。
+
+## SD-19.6 強制結案（T28）與結束接管
+
+強制結案檢查（任一不符回 409／422 並列出原因）：ACTIVE 接管、`confirm_item_no` 相符、`row_version` 相符、至少一版寫回、本案沒有已取得發送許可且未終態的執行；關聯告警仍 FIRING 時需 `ack_firing=true`（AR Q29）。
+
+通過後單一交易：
+
+1. 以最新寫回產生 `closure_draft`（source=MANUAL_TAKEOVER、closure_reason=FORCED_BY_COMMERCIAL_MODEL），直接標記 confirmed_by＝操作者並鎖定。
+2. STATE_CHANGED（T28）轉 CLOSED；`manual_takeover` 改 CLOSED；清除 `active_takeover_id`；寫 FORCE_CLOSED。
+3. 建立 Jira 同步（沿用 SD 的 5 次補送）；可選建立知識草稿（需審查，不自動發布）。
+4. 不清除 `resource_hold`／`execution_hold`，也不釋放 STALE 鎖。
+
+結束接管（release）：`manual_takeover` 改 RELEASED、清除 `active_takeover_id`、寫 TAKEOVER_RELEASED；狀態維持 PENDING_HUMAN，之後照 T21～T24；不自動重建 AI 任務。
+
+## SD-19.7 Web
+
+- 明細頁新增 `takeover` 區塊：未接管時顯示「改由商用模型接管」表單（工具下拉、模型、原因）；接管中顯示接管者、時間、工具、模型、接管包版本與下載、寫回表單、寫回歷史、「強制結案」與「結束接管」。
+- 列表與明細頂端以徽章標示「人工接管中」；時間軸顯示上述 case_event。
+- 這些表單一律 POST＋CSRF，不受 AR Q23（Web 是否提供其他寫入操作）影響（AR Q30 建議）。
+- 強制結案按鈕在檢查不通過時停用並列出原因；送出前再輸入 item_no。
+
+## SD-19.8 設定
+
+| 鍵 | 預設 | 說明 |
+|---|---|---|
+| `takeover.enabled` | `false` | 供應商條款與資料政策核准後才開（AR Q27）；false 時只能接管與寫回，不能產生接管包 |
+| `takeover.tools` | 空 | 允許的 CLI 工具清單 |
+| `takeover.alias-hosts` | `true` | 接管包內 hostname／IP 換別名（AR Q28） |
+| `takeover.package-ttl` | `PT15M` | 下載 token 與 grant 有效期 |
+
+## SD-19.9 指標
+
+`takeover_started_total{reason,tool}`、`takeover_duration_seconds`、`takeover_force_closed_total`、`takeover_reopened_within_7d_total`、`takeover_package_excluded_total`、`takeover_package_rejected_total{reason}`、`takeover_active`（gauge）（對應 AR §20.10）；接管中案件不計入 AI 處理時效指標。
+
+## SD-19.10 測試
+
+| 編號 | 測試 |
+|---|---|
+| TK-01 | Qwen stub 停擺：不產生接管或外送；手動接管後 READY 任務 CANCELLED，Qwen 恢復後不重建 |
+| TK-02 | 兩個使用者同時接管：只有一筆 ACTIVE（partial unique index）；第二筆未帶 handover 回 409 |
+| TK-03 | 植入假秘密的案件產生接管包：zip 內無原值，manifest 雜湊正確；masker 拋錯時拒絕且無檔案 |
+| TK-04 | 下載 token 換 session、第二次使用、逾時都失敗；成功下載有稽核 |
+| TK-05 | APPLYING 中接管：QUEUED 根執行 CANCELLED 並釋放鎖；RUNNING 者不動，強制結案回 409 |
+| TK-06 | 沒有寫回時強制結案被拒；成功時 CLOSED、`FORCED_BY_COMMERCIAL_MODEL`、草稿鎖定、Jira 同步建立、resource_hold 仍在 |
+| TK-07 | 接管中提出的計畫命中白名單條件仍進 PENDING_APPROVAL；T21 回 409 |
+| TK-08 | 接管後到達的 Qwen 回應標 `IGNORED_AFTER_TAKEOVER`，不改狀態 |
+| TK-09 | 寫回含 OFF_PLATFORM 但未勾選 operator_ack 被拒；勾選後有 MANUAL_ACTION 事件 |
+| TK-10 | Web 表單缺 CSRF token 回 403；未登入回 401／導向登入 |
+
 ## 版本紀錄
 
 | 版本 | 日期 | 摘要 |
 |---|---|---|
+| 0.52 | 2026-10-26 | 依已對齊需求第五版 U39～U42 新增 SD-19：manual_takeover／takeover_package／takeover_writeback DDL、TakeoverUseCase 步驟（接管 T27、接管包與遮罩、寫回、強制結案 T28、結束接管）、Web 區塊、設定、指標與 TK-01～10 測試；SD-01.7 新增接管 API；SD-04.1 補 active_takeover_id、TAKEOVER、接管事件、CANCELLED；SD-14.5 補人工接管例外。 |
 | 0.51 | 2026-10-26 | 依已對齊需求第四版 U35～U38 新增 SD-17（Web 介面與技術選型：PostgreSQL／Flyway／JPA Specification、form login＋LDAP、Thymeleaf＋htmx、read model、路由與 filter chain、索引、沿用 `b8a23d4` demo 的修正）與 SD-18（work_task 佇列、worker 設定、resource_lock／resource_lock_waiter、等待與失效鎖處理、測試）；SD-01.10 修改 worker 預設改 2；SD-01.7、SD-04.1、SD-07.3、SD-14.1、SD-15.1 加指引。AR Q22～Q26 待確認。 |
 | 0.50 | 2026-10-26 | 依已對齊需求 U1～U34 與附錄 A 改寫：移除 ADMIN／NORMAL_USER 角色與 RBAC，改為已驗證身分與可自我核准（標示）；資料模型合併為 `work_item`／`work_activity`／`approval`／`external_sync_*`，刪除 publication_decision；單一 WorkItemStatus 與 AR §10.4 Jira 映射；Jira 補送 5 次、無總期限；Qwen 不可用只暫停 AI 步驟；故障期間持續唯讀監控；手動 kill switch；新增 SD-14.11 監控去重與事件關聯摘要；移除首版／MVP／分期與多 Bot 用語。 |
 | 0.28～0.42 | — | 舊版：拆分 SRS／SA／SD、兩角色、雙紀錄義務、逐案發布同意等；衝突條文已於 0.50 刪改，見已對齊需求附錄 A 與 git 歷史。 |

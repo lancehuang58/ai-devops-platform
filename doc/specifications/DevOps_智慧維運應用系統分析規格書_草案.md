@@ -1,6 +1,6 @@
 # DevOps 智慧維運應用系統分析規格書
 
-分析設計草案｜分析版本 0.51｜依據 SRS 0.51 與已對齊需求第四版（U1～U38）｜2026 年 10 月 26 日（Asia/Taipei）
+分析設計草案｜分析版本 0.52｜依據 SRS 0.52 與已對齊需求第五版（U1～U42）｜2026 年 10 月 26 日（Asia/Taipei）
 
 ## 文件定位
 
@@ -16,6 +16,7 @@ SA 使用狀態名稱及命令類型描述可觀察行為，並不指定資料�
 | UC-04 維護已知能力 | 已驗證使用者 | 事先測試並發布的方案、命令、資源、檢查條件、監控來源與自動修復規則；每次變更稽核。 |
 | UC-05 監控事件、通知及正常排程 | 監控來源／已授權背景元件 | 事件去重後自動開案與 Jira；關聯範圍內先整合通知；正常排程遵守同一授權、資料與停止規則。 |
 | UC-15 Web 檢視工作項目 | 已驗證使用者 | 登入後看進行中工作項目與狀態，依系統／時間／狀態篩選，點選看明細與時間軸（SA-12；UC-06～14 見 SA-11.2）。 |
+| UC-16 商用模型人工接管與強制結案 | 已驗證使用者 | Qwen 不穩定或停擺時手動接管工作項目，下載遮罩後的接管包，在平台外用訂閱制商用模型處理，寫回結果後強制結案（SA-13）。 |
 
 每個使用案例都保留原始請求者與實際核准者；AI 不作為具有核准身分的使用者。
 
@@ -41,6 +42,7 @@ SA 使用狀態名稱及命令類型描述可觀察行為，並不指定資料�
 | SA-10 | 自主查詢 Jenkins Job 內容 |
 | SA-11 | 平台工作項目、Teams、外部協助、知識、每案紀錄與監控 |
 | SA-12 | Web 檢視、並行推進與資源鎖 |
+| SA-13 | 商用模型人工接管與強制結案 |
 
 # SA-01 身分、操作責任與使用案例
 
@@ -389,7 +391,7 @@ Jira（與可選的 Confluence）紀錄寫入採 SYSTEM_RECORD 的政策授權�
 
 ## SA-04.3 WorkItemStatus 與 closure_reason
 
-事故、需求、問題討論與主動調查共用一套 `WorkItemStatus`（U7）；舊 RequestStatus、IncidentStatus 與 Case 狀態均由此取代。完整狀態圖與轉換表 T01～T26 見 AR §3.3～§3.4，本節摘要分析要點。
+事故、需求、問題討論與主動調查共用一套 `WorkItemStatus`（U7）；舊 RequestStatus、IncidentStatus 與 Case 狀態均由此取代。完整狀態圖與轉換表 T01～T28 見 AR §3.3～§3.4，本節摘要分析要點。
 
 | WorkItemStatus | 中文 | 意義 |
 |---|---|---|
@@ -405,13 +407,14 @@ Jira（與可選的 Confluence）紀錄寫入採 SYSTEM_RECORD 的政策授權�
 | `CLOSURE_REVIEW` | 結案草稿待確認 | 平台產生結案草稿，等使用者看過並確認（U11）。 |
 | `CLOSED` | 已結案 | 終態，必填 `closure_reason`。 |
 
-`closure_reason`：`RESOLVED`、`SELF_RECOVERED`、`FULFILLED`、`CONCLUDED`、`FALSE_POSITIVE`、`DUPLICATE`（須填 `duplicate_of`）、`WITHDRAWN`、`WONT_FIX`。舊 CANCELLED 改為 CLOSED＋WITHDRAWN，同樣經結案確認。
+`closure_reason`：`RESOLVED`、`SELF_RECOVERED`、`FULFILLED`、`CONCLUDED`、`FALSE_POSITIVE`、`DUPLICATE`（須填 `duplicate_of`）、`WITHDRAWN`、`WONT_FIX`、`FORCED_BY_COMMERCIAL_MODEL`（人工接管後強制結案，唯一不經結案確認的原因，SA-13.5）。舊 CANCELLED 改為 CLOSED＋WITHDRAWN，同樣經結案確認。
 
 | 分析要點 | 規則 |
 |---|---|
 | 核准無逾時 | PENDING_APPROVAL 與 CLOSURE_REVIEW 無逾時轉換，不自動拒絕或結案。 |
 | 失敗不續跑 | APPLYING／VERIFYING 遇 FAILED、PARTIAL、UNKNOWN、BLOCKED_* 轉 PENDING_HUMAN；CHANGE 不重送，D02 一次查核在 APPLYING 內完成。 |
 | 人工後續 | PENDING_HUMAN 可由人員要求重新調查（T21）、新解法（T22）、登錄手動處理並驗證（T23）或結案（T24）；舊執行結果不覆寫。 |
+| 人工接管 | 任何非 CLOSED 狀態可由使用者接管（T27 → PENDING_HUMAN）；接管中可強制結案（T28 → CLOSED）；兩者只能由人觸發，見 SA-13。 |
 | 卡住不改狀態 | kill switch、resource_hold、Qwen 不可用只設定 `blocked_reason`（`KILL_SWITCH`／`RESOURCE_HOLD`／`RESOURCE_LOCK_WAIT`／`LLM_UNAVAILABLE`／`JIRA_SYNC_PENDING`），不改狀態、不丟資料；`RESOURCE_LOCK_WAIT` 見 SA-12.5。 |
 | 重開 | CLOSURE_REVIEW 期間被退回，或關聯告警在重開窗內再次 FIRING，回 COLLECTING（T26）；CLOSED 後的新告警依設計文件 B §4.5 處理。 |
 | 類型限制 | DISCUSSION 不進 APPLYING／VERIFYING；INQUIRY 不進 MATCHING 以後的狀態，需要時先轉型為 INCIDENT。 |
@@ -708,7 +711,7 @@ flowchart TD
 
 Qwen 是必要主模型，提示、模型、來源及版本均可追溯。調查無已知解法時可提出帶來源的解法草稿；可執行步驟只能引用已發布命令，並須核准。外部 provider 未核准時任何外送為零；啟用後僅在使用者明確啟動 grant 及 export policy 通過時提供本案最小資料。
 
-工具技術故障停止；Qwen 不可用只暫停 AI 步驟（U14），不因有外部 provider 就自動 fallback。外部結果仍須 schema、引用、scope 與預算檢查，不直接取得工具權限。MQ 的 Qwen 與外部 profile 分列，不以外部成績取代 Qwen 驗收。
+工具技術故障停止；Qwen 不可用只暫停 AI 步驟（U14），不因有外部 provider 就自動 fallback；使用者逐案的商用模型人工接管是例外，不屬平台 fallback（SA-13）。外部結果仍須 schema、引用、scope 與預算檢查，不直接取得工具權限。MQ 的 Qwen 與外部 profile 分列，不以外部成績取代 Qwen 驗收。
 
 ## SA-08.3 多服務、查詢與取號的驗收情境
 
@@ -996,7 +999,7 @@ DB 帳號到期是新的正常維運動作，須另有已發布模板及明確�
 
 API 功能包含案件摘要／狀態、證據清單與安全內容、知識檢索、已發布診斷工具、提交 findings／proposal。外部身份與案件 scope 綁定、可撤銷且有期限；CHANGE、approval、raw、任意 URL／shell 及憑證升級均拒絕。
 
-正式啟動由使用者在健康工作中明確要求並稽核。模型不確定可以提出外部協助建議，但不能自行發起外送。MCP 技術故障仍停止；Qwen 不可用時 AI 步驟暫停（U14），不以外部模型當 fallback。交接共享原工作 deadline／步數／token 限制，不因換 provider 或新外部請求而清零。外部回覆也是低信任資料，仍須證據、schema 與來源驗證。
+正式啟動由使用者在健康工作中明確要求並稽核。模型不確定可以提出外部協助建議，但不能自行發起外送。MCP 技術故障仍停止；Qwen 不可用時 AI 步驟暫停（U14），平台不以外部模型當 fallback。使用者可另行逐案人工接管，改在平台外用訂閱制商用模型處理（U39，SA-13），平台不呼叫該模型。交接共享原工作 deadline／步數／token 限制，不因換 provider 或新外部請求而清零。外部回覆也是低信任資料，仍須證據、schema 與來源驗證。
 
 ## SA-11.7 知識的取得、使用與成長
 
@@ -1138,10 +1141,81 @@ MQ-PLT01～18 檢驗工作項目分類、建議、表單、外部交接、檢索
 | SA-AC-W5 | 同資源兩張單只有一張派送；另一張 `RESOURCE_LOCK_WAIT` 且 Web 看得到持有者與順位；釋放後依序取得並重做檢查；不同資源同時派送 |
 | SA-AC-W6 | 等待逾上限轉 PENDING_HUMAN 且根執行 CANCELLED；持有者中斷且可能已派送時鎖轉 resource_hold，不放行等待者 |
 
+# SA-13 商用模型人工接管與強制結案
+
+對應 SRS FR-47～50、CON-10、AC-27～30；需求依據 AR §20（U39～U42）。設計見 SD-19。
+
+## SA-13.1 使用案例 UC-16 商用模型人工接管與強制結案
+
+| 項目 | 內容 |
+|---|---|
+| 參與者 | 已驗證使用者（操作者）；平台外的訂閱制商用模型 CLI（不是平台參與者，平台不呼叫它） |
+| 前置條件 | 已登入 Web；`takeover.enabled=true`（供應商條款與資料政策已核准，AR Q27）；工作項目非 CLOSED |
+| 主要流程 | 1. 在明細頁按「改由商用模型接管」，選工具、填模型與原因。2. 平台轉 PENDING_HUMAN（T27），取消排隊中的 AI 工作。3. 按「產生接管包」並下載。4. 在自己的機器以自己的訂閱帳號執行 CLI（非互動或互動）。5. 寫回摘要、根因、已執行處置與驗證證據。6. 按「強制結案」並輸入 item_no 確認，平台經 T28 結案 |
+| 替代流程 | 3a. 需要平台執行修改：經 T22 送出引用已發布命令的計畫 → 核准 → 套用與驗證（SA-13.4）。5a. 結果不足以結案：結束接管，回 PENDING_HUMAN 照 T21～T24 處理。1a. 已有人接管：可「改由我接手」，前一筆標 HANDED_OVER |
+| 例外 | 遮罩元件失效：拒絕產生接管包。有可能已派送且未終態的執行：拒絕強制結案並說明原因。供應商未核准：接管按鈕可用（記錄責任人），接管包產生停用 |
+| 輸出 | `manual_takeover`、`takeover_package`（版本化）、`takeover_writeback`（版本化）、鎖定的 `closure_draft`、CLOSED＋`FORCED_BY_COMMERCIAL_MODEL` |
+| 稽核 | 接管、接手、產生與下載接管包、寫回、強制結案、結束接管各寫 case_event |
+
+## SA-13.2 接管對進行中工作的影響
+
+| 接管時的情境 | 處理 |
+|---|---|
+| 等待 Qwen 或 `LLM_UNAVAILABLE` | READY 任務 CANCELLED；清除 `LLM_UNAVAILABLE`；之後到達的 Qwen 回應只存證據（`IGNORED_AFTER_TAKEOVER`） |
+| PENDING_APPROVAL | 未決 approval 改 SUPERSEDED；舊提案不能再核准 |
+| APPLYING，根執行 QUEUED／PRECHECKING／等待資源鎖 | 根執行 CANCELLED、waiter CANCELLED、鎖釋放 |
+| APPLYING，可能已派送 | 不中斷、不重送、不派下一步；鎖依 SA-12.5／AR §19.5 釋放或轉 resource_hold |
+| VERIFYING | 已排定的 VERIFY 取樣跑完並保存，不再觸發 T19／T20 |
+| CLOSURE_REVIEW | 原草稿保留為參考；結案時以寫回產生新版本 |
+| Qwen 恢復 | 接管中或已強制結案的案件不自動續做 |
+
+## SA-13.3 接管包與遮罩
+
+接管包內容、遮罩規則與格式以 AR §20.4 為準。分析要點：接管包是外送，不是內部查閱；所以用 EXTERNAL_EXPORT_SAFE allowlist，而不是一般使用者的 COMMON_QUERY_SAFE；內部 hostname／IP 是否換別名見 AR Q28。每次產生都是新版本並記錄 hash，寫回時要標明用的是哪一版。
+
+## SA-13.4 寫回與經平台執行修改
+
+- 寫回欄位與必填規則見 AR §20.5；`OFF_PLATFORM` 動作必須有目標、時間、執行者與結果，並勾選由操作者負責。
+- 寫回內容是低信任資料：只當證據保存，不直接觸發命令或規則。
+- 經平台執行修改時，計畫只能引用已發布 command／solution；走核准（可自行核准）、資源鎖、kill switch 與派送前檢查；不走白名單（AR Q31 建議）。
+
+## SA-13.5 強制結案
+
+| 檢查 | 不符合時 |
+|---|---|
+| 接管為 ACTIVE，且操作者已登入 | 拒絕 |
+| 至少一版寫回 | 拒絕，提示先寫回 |
+| 沒有可能已派送且未終態的執行 | 拒絕，顯示執行編號與狀態 |
+| 關聯告警仍 FIRING | 依 AR Q29：建議要求勾選確認後允許 |
+| 再次輸入 item_no 確認 | 不送出 |
+
+通過後：CLOSED、`FORCED_BY_COMMERCIAL_MODEL`、鎖定草稿、Jira 同步、可選知識草稿（需審查）；resource_hold／kill switch 不清除。
+
+## SA-13.6 限制與風險
+
+| 項目 | 說明 |
+|---|---|
+| 訂閱條款 | 以個人、互動使用為主；平台不自動呼叫、不發回呼 token、不共用帳號；導入前重新確認（AR Q27） |
+| 用量上限 | 故障高峰可能用完額度；不列入 NFR 的可用性承諾 |
+| 平台外動作 | 平台無法控制或驗證；由操作者負責並寫回 |
+| 資料外送 | 只送遮罩後的接管包；供應商須經公司核准 |
+
+## SA-13.7 分析驗收
+
+| 編號 | 驗證 |
+|---|---|
+| SA-AC-T1 | Qwen 停擺時平台不自動接管；手動接管後該案 READY 任務 CANCELLED，Qwen 恢復後不續做 |
+| SA-AC-T2 | 接管紀錄在明細與時間軸顯示接管者、時間、工具、模型 |
+| SA-AC-T3 | 植入假密碼、token、私鑰、`Authorization` 標頭、帶帳密連線字串的案件，接管包內一律為占位符；下載有稽核 |
+| SA-AC-T4 | APPLYING 中接管：未派送者 CANCELLED 並釋放鎖；可能已派送者不中斷，強制結案被拒 |
+| SA-AC-T5 | 強制結案不經 CLOSURE_REVIEW，`closure_reason=FORCED_BY_COMMERCIAL_MODEL`，草稿鎖定，Jira 同步建立，resource_hold 仍在 |
+| SA-AC-T6 | 接管中經平台執行的計畫一律進 PENDING_APPROVAL，不命中白名單 |
+
 ## 版本紀錄
 
 | 版本 | 日期 | 摘要 |
 |---|---|---|
+| 0.52 | 2026-10-26 | 依已對齊需求第五版 U39～U42 新增 SA-13：UC-16 商用模型人工接管與強制結案、接管對進行中工作的影響、接管包與遮罩、寫回、強制結案檢查、限制與風險、分析驗收 SA-AC-T1～T6；SA-04.3 補 `FORCED_BY_COMMERCIAL_MODEL` 與 T27／T28；SA-08.2、SA-11.6 補人工接管例外。Q27～Q31 建議值待確認。 |
 | 0.51 | 2026-10-26 | 依已對齊需求第四版 U35～U38 新增 SA-12：UC-15 Web 檢視（清單篩選、明細、時間軸）、並行推進與等待不佔 worker、資源鎖等待狀態 `RESOURCE_LOCK_WAIT`、分析驗收 SA-AC-W1～W6；SA-04.3 補 `RESOURCE_LOCK_WAIT`。Q22～Q26 建議值待確認。 |
 | 0.50 | 2026-10-26 | 依已對齊需求 U1～U34 與附錄 A 改寫：移除角色分級與 bot registry；三套狀態合併為 WorkItemStatus 與 `work_item`；刪除逐案發布同意；Jira 補送 5 次；Qwen 不可用只暫停 AI 步驟；故障期間持續唯讀監控；新增監控去重、事件候選、自動修復白名單、結案草稿與 kill switch（SA-11.10）；移除分期寫法。 |
 | 0.30～0.40 | — | 舊版：兩角色、雙紀錄義務、事故自動修復停用等；衝突條文已於 0.50 刪改，見已對齊需求附錄 A。 |

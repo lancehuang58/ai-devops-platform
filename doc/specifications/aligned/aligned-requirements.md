@@ -2,11 +2,11 @@
 
 | 項目 | 內容 |
 |---|---|
-| 文件性質 | 對齊後的**目標需求**基準；SRS／SA／SD 0.51 依本文件改寫（舊 0.40～0.42 中衝突的條文已刪改，見附錄 A） |
-| 依據 | 儲存庫 `lancehuang58/ai-devops-platform` commit `2661434` 的 `doc/specifications/` 三份規格書，加上使用者 2026-10 的 38 項決策（見 §0；U35～U38 依 2026-10-26 Web 介面需求，並沿用 commit `b8a23d4` 的管理登入 demo） |
+| 文件性質 | 對齊後的**目標需求**基準；SRS／SA／SD 0.52 依本文件改寫（舊 0.40～0.42 中衝突的條文已刪改，見附錄 A） |
+| 依據 | 儲存庫 `lancehuang58/ai-devops-platform` commit `2661434` 的 `doc/specifications/` 三份規格書，加上使用者 2026-10 的 42 項決策（見 §0；U35～U38 依 2026-10-26 Web 介面需求，並沿用 commit `b8a23d4` 的管理登入 demo；U39～U42 依 2026-10-26「Qwen 不穩定時改用商用模型介入並強制結案」需求） |
 | 搭配文件 | [`alert-event-and-dedup-design.md`](./alert-event-and-dedup-design.md)：監控事件格式、去重資料結構與流程 |
-| 版本 | 第四版（2026-10-26）：納入 U35～U38（Web 介面、技術選型、並行推進與資源鎖，§17～§19）；§16 新增 Q22～Q26 建議值待確認。第三版（2026-10-26）：納入 U20～U34，所有待確認項目都已決定（§16）。第二版：納入 U14～U19；跨資源關聯改為「先整合成一則通知，確認是同一事件後才開單」 |
-| 狀態 | 已確認（2026-10-26，使用者回覆「全部如建議」）。SRS／SA／SD 已依附錄 A 刪改並升為 0.50（本機分支 `docs/aligned-requirements`）。第四版 U35～U38 依使用者 2026-10-26 指示（Web 登入／清單／篩選／明細；前端採 Thymeleaf＋htmx）；Q22～Q26 為建議值，尚待使用者確認；SRS／SA／SD 隨之升為 0.51 |
+| 版本 | 第五版（2026-10-26）：納入 U39～U42（商用模型人工接管、接管包、寫回與強制結案、只用訂閱方案，§20）；§16 新增 Q27～Q31 建議值待確認。第四版（2026-10-26）：納入 U35～U38（Web 介面、技術選型、並行推進與資源鎖，§17～§19）；§16 新增 Q22～Q26 建議值待確認。第三版（2026-10-26）：納入 U20～U34，所有待確認項目都已決定（§16）。第二版：納入 U14～U19；跨資源關聯改為「先整合成一則通知，確認是同一事件後才開單」 |
+| 狀態 | 已確認（2026-10-26，使用者回覆「全部如建議」）。SRS／SA／SD 已依附錄 A 刪改並升為 0.50（本機分支 `docs/aligned-requirements`）。第四版 U35～U38 依使用者 2026-10-26 指示（Web 登入／清單／篩選／明細；前端採 Thymeleaf＋htmx）；Q22～Q26 為建議值，尚待使用者確認；SRS／SA／SD 隨之升為 0.51。第五版 U39～U42 依使用者 2026-10-26 需求（Qwen 不穩定、服務停擺時，人工改用商用模型處理後強制結案）與可行性評估（§20.1）；Q27～Q31 為建議值，尚待使用者確認；SRS／SA／SD 隨之升為 0.52 |
 | EIP 引用 | 《企業集成模式》中譯本，格式為「模式名（節號，書頁）」 |
 
 ---
@@ -53,6 +53,10 @@
 | U36 | 技術選型：Spring Boot 生態系（使用者已定）；PostgreSQL＋Flyway；Spring Data JPA（清單篩選用 Specification）；Spring Security 表單登入＋伺服器端 session（帳密以 LDAP bind 驗證，之後可選 OIDC 接 Keycloak／AD）；前端 Thymeleaf＋htmx 與 App 同一部署（使用者選定，不採 React／Vue SPA） | §18 |
 | U37 | 並行推進：多個工作項目同時推進；worker 數量可配置；等待核准、使用者補資料、Qwen 回應或 VERIFY 取樣間隔時保存狀態並釋放 worker | §19.1～§19.2 |
 | U38 | 資源鎖：同一目標資源同時只允許一個工作項目在 APPLYING／VERIFYING 持有變更權；其他資源不受影響；後到者標 `blocked_reason=RESOURCE_LOCK_WAIT` 排隊，等待上限到期轉 PENDING_HUMAN；租約過期但可能仍有在途命令時不自動放行 | §19.3～§19.5 |
+| U39 | 商用模型人工接管：Qwen 不穩定或服務停擺時，使用者可以把任何未結案的工作項目手動「接管」，改用商用模型（例如 Codex CLI、Claude Code）在平台外處理；**只能由人**在 Web 明細頁或 API 觸發，平台不自動切換；平台記錄接管者、時間、工具與模型（`work_activity` kind=`TAKEOVER`）；接管後取消該案排隊中的 AI 工作，Qwen 恢復也不自動接回 | §20.1～§20.3 |
+| U40 | 接管包：平台匯出單一接管包（告警、已收集的調查資料、目前狀態與歷程、已提出的解法、相關白名單與規則）；匯出前在伺服器端遮罩密碼、token、金鑰與內部秘密；每次產生與下載都寫稽核 | §20.4 |
+| U41 | 寫回與強制結案：操作者經 Web／API 寫回摘要、根因、已執行處置與驗證證據後，可強制結案，`closure_reason=FORCED_BY_COMMERCIAL_MODEL`，因為是人觸發所以**不經結案草稿確認**（U11 的例外）；經平台執行的修改仍受核准、白名單、資源鎖與 kill switch 規則約束；平台外的手動動作由操作者負責，並須寫在寫回內容中 | §20.5～§20.8 |
+| U42 | 只用訂閱方案：商用模型只用個人訂閱（ChatGPT Plus／Pro、Claude Pro／Max），**不用 API key**，因此平台不經 LiteLLM 呼叫商用模型，也不發機器憑證給 CLI 回呼；訂閱條款以個人、互動使用為主，不能做成無人值守的後端；有用量上限；導入前要重新確認供應商條款與公司資料政策 | §20.1、§20.9 |
 
 ---
 
@@ -140,9 +144,9 @@ PostgreSQL、MariaDB、Jenkins、GitLab、Jira、Confluence、Nexus、Harbor、G
 | `CLOSURE_REVIEW` | 結案草稿待確認 | 平台產生結案草稿，等使用者看過並確認（U11）；沒人回應就一直停在這裡 |
 | `CLOSED` | 已結案 | 終態，必填 `closure_reason` |
 
-`closure_reason`：`RESOLVED`（已解決）、`SELF_RECOVERED`（自行恢復，未套用變更）、`FULFILLED`（需求完成）、`CONCLUDED`（討論或調查已有結論）、`FALSE_POSITIVE`（誤報）、`DUPLICATE`（重複，需填 `duplicate_of`）、`WITHDRAWN`（撤回或取消）、`WONT_FIX`（決定不處理）。舊的 `CANCELLED` 狀態改為 `CLOSED + WITHDRAWN`，同樣要經過結案確認。
+`closure_reason`：`RESOLVED`（已解決）、`SELF_RECOVERED`（自行恢復，未套用變更）、`FULFILLED`（需求完成）、`CONCLUDED`（討論或調查已有結論）、`FALSE_POSITIVE`（誤報）、`DUPLICATE`（重複，需填 `duplicate_of`）、`WITHDRAWN`（撤回或取消）、`WONT_FIX`（決定不處理）、`FORCED_BY_COMMERCIAL_MODEL`（人工改用商用模型接管後強制結案，**不經** CLOSURE_REVIEW，§20.7）。舊的 `CANCELLED` 狀態改為 `CLOSED + WITHDRAWN`，同樣要經過結案確認。
 
-輔助欄位（不是狀態）：`blocked_reason`（例如 `LLM_UNAVAILABLE`、`KILL_SWITCH`、`RESOURCE_HOLD`、`RESOURCE_LOCK_WAIT`（等待資源鎖，§19.4）、`JIRA_SYNC_PENDING`，用於顯示「卡在哪裡」，不改變狀態）、`signal_state`（關聯告警群組目前是 FIRING／RECOVERED／FLAPPING）、`record_completeness`（外部紀錄是否齊全）。
+輔助欄位（不是狀態）：`blocked_reason`（例如 `LLM_UNAVAILABLE`、`KILL_SWITCH`、`RESOURCE_HOLD`、`RESOURCE_LOCK_WAIT`（等待資源鎖，§19.4）、`JIRA_SYNC_PENDING`，用於顯示「卡在哪裡」，不改變狀態）、`signal_state`（關聯告警群組目前是 FIRING／RECOVERED／FLAPPING）、`record_completeness`（外部紀錄是否齊全）、`active_takeover_id`（人工接管中時指向 `manual_takeover`，§20；Web 顯示「人工接管中」）。
 
 ### 3.3 狀態圖
 
@@ -173,6 +177,8 @@ stateDiagram-v2
     PENDING_HUMAN --> VERIFYING: 人員登錄已手動處理，要求驗證
     PENDING_HUMAN --> CLOSURE_REVIEW: 人員決定結案
     CLOSURE_REVIEW --> CLOSED: 使用者確認結案草稿
+    note right of PENDING_HUMAN: T27 任何非 CLOSED 狀態經人工接管轉入（§20.3）
+    PENDING_HUMAN --> CLOSED: 接管中強制結案（T28，不經 CLOSURE_REVIEW）
     CLOSURE_REVIEW --> COLLECTING: 使用者退回，或同一告警在重開窗內再次觸發
     CLOSED --> [*]
 ```
@@ -208,6 +214,8 @@ stateDiagram-v2
 | T24 | PENDING_HUMAN | CLOSURE_REVIEW | 使用者 | 決定結案（含 FALSE_POSITIVE／DUPLICATE／WONT_FIX） |
 | T25 | CLOSURE_REVIEW | CLOSED | 使用者 | 確認結案草稿（可先修改草稿；確認時鎖定該版本） |
 | T26 | CLOSURE_REVIEW | COLLECTING | 使用者／系統 | 使用者退回；或關聯告警在重開窗內再次 FIRING（系統，見設計文件 B §4.5） |
+| T27 | 任何非 CLOSED 狀態（PENDING_HUMAN 除外） | PENDING_HUMAN | 使用者 | 人工接管（U39，§20.3）：寫 `manual_takeover`、`work_activity`（TAKEOVER）；取消排隊中的 AI 工作；可能已派送的命令不中斷、依 §19.5 處理。已在 PENDING_HUMAN 時接管只記錄、不轉換 |
+| T28 | 接管中的任何非 CLOSED 狀態 | CLOSED | 使用者 | 強制結案（U41，§20.7）：已有寫回、沒有可能已派送且未終態的執行；`closure_reason=FORCED_BY_COMMERCIAL_MODEL`；以寫回產生並鎖定一版結案草稿，**不經 CLOSURE_REVIEW** |
 | — | 任何非終態 | （不變）＋`blocked_reason` | 系統 | kill switch、resource_hold、LLM 不可用時只標記卡住原因，不改狀態、不丟資料 |
 
 類型限制：
@@ -235,6 +243,7 @@ stateDiagram-v2
 | `investigation`（SD-04.1） | `work_activity`（kind=INVESTIGATION）＋`evidence_record` | 合併 |
 | 新增 | `alert_delivery`、`alert_receipt`、`alert_group`、`alert_group_event`、`work_item_alert_group`、`notification_outbox`、`alert_silence`、`correlation_rule`、`correlation_scope`、`incident_candidate`、`incident_candidate_key`、`incident_candidate_member`、`notification_message`、`monitor_check_state`、`monitor_source`、`monitor_check`、`auto_remediation_rule`、`execution_hold`（擴充 manual 欄位）、`closure_draft` | 見 §5、§7、§9、§13 與設計文件 B |
 | 新增（第四版） | `work_task`（DB 工作佇列）、`resource_lock`、`resource_lock_waiter` | 見 §19、SD-18 |
+| 新增（第五版） | `manual_takeover`、`takeover_package`、`takeover_writeback`；`work_item` 加 `active_takeover_id`；`work_task.status` 加 `CANCELLED` | 見 §20、SD-19 |
 
 沿用、不改：`solution_definition`、`execution_plan`、`plan_step`、`command_definition`、`command_execution`、`execution_attempt`、`execution_outbox`、`execution_resolution`、`timeout_check`、`evidence_record`、`resource_catalog` 與 SD-05 的五組資源表、`resource_hold`、`app_core_health`、`health_profile`／`health_sample`、知識相關表。
 
@@ -429,6 +438,7 @@ flowchart TD
 - 草稿以 REPORT_SAFE 投影呈現，不含秘密與 raw。
 - 使用者可以：**確認**（T25，鎖定該版本並結案）、**修改後確認**（產生新版本後確認）、**退回**（T26，回 COLLECTING 並寫理由）。
 - 沒人確認時一直停在 CLOSURE_REVIEW（與 §8.2 一致，可提醒）。
+- 唯一例外：人工接管後的強制結案（T28，§20.7）不經 CLOSURE_REVIEW；平台以寫回內容產生一版草稿並由操作者在結案時鎖定，產生者記為 `MANUAL_TAKEOVER`。
 - LLM 不可用時，以固定模板只用已存證據產生草稿，不阻擋結案確認。
 - 結案後：觸發 Jira 狀態同步請求；若草稿勾選知識沉澱，就建立知識草稿（§11）。
 
@@ -490,7 +500,7 @@ stateDiagram-v2
 | APPLYING、VERIFYING | 處理中 |
 | PENDING_HUMAN | 待人工 |
 | CLOSURE_REVIEW | 待結案確認 |
-| CLOSED | 已結案（resolution 對應 closure_reason） |
+| CLOSED | 已結案（resolution 對應 closure_reason；`FORCED_BY_COMMERCIAL_MODEL` 建議對應「完成」並加標籤 `forced-close`，留言附寫回摘要，§20.7） |
 
 Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維運。
 
@@ -527,7 +537,7 @@ Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維�
 | 證據不可變 | raw 原文保留，遮罩投影不得覆寫 raw；報告修訂保留舊版 |
 | 提示注入 | log、工具回應、知識文件、告警 annotation 都是資料；不能修改規則、授權或觸發額外步驟 |
 | Jira／文件 | API token；只寫安全投影；不能透過紀錄 worker 操作維運系統 |
-| 外部模型 | 預設停用；啟用時逐案建立 grant（目的、資料清單、期限、預算），只外送 EXTERNAL_EXPORT_SAFE |
+| 外部模型 | 預設停用；啟用時逐案建立 grant（目的、資料清單、期限、預算），只外送 EXTERNAL_EXPORT_SAFE。人工接管的接管包（§20.4）也算外送：使用同一套 grant（目的 `MANUAL_TAKEOVER`）與投影，供應商須先經公司核准（Q27） |
 | 監控接收端 | webhook 驗證（bearer token／basic auth／mTLS 擇一，依來源設定）、payload 大小限制、速率限制；不合法的訊息進入無效訊息紀錄（非法消息通道 4.5，p.77），不丟棄也不開案 |
 
 ### 12.2 移除角色區分（U13）
@@ -566,7 +576,7 @@ Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維�
 
 ### 13.4 核心健康門檻（調整）
 
-沿用 SD-07.7／SD-08.4 的 core check，但**分成兩級**。Qwen 不可用時（U14），只暫停 AI 分析、AI 提案、AI 摘要，案件標 `blocked_reason=LLM_UNAVAILABLE`，Qwen 恢復後自動續做；其他能力照常：
+沿用 SD-07.7／SD-08.4 的 core check，但**分成兩級**。Qwen 不可用時（U14），只暫停 AI 分析、AI 提案、AI 摘要，案件標 `blocked_reason=LLM_UNAVAILABLE`，Qwen 恢復後自動續做（人工接管中或已強制結案的案件除外，§20.3）；其他能力照常。平台不會因 Qwen 不可用自動改用其他模型；人工接管（U39）是使用者逐案啟動的逃生口，不是平台的備援：
 
 | 能力 | 必要核心 |
 |---|---|
@@ -616,7 +626,7 @@ Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維�
 
 ## 16. 待確認
 
-第三版時沒有待確認項目（2026-10-26 使用者回覆「全部如建議」，原 Q1～Q21 全部轉為 §0 的決策，對照如下）。第四版新增 Q22～Q26：表內「建議」已先寫進 §17～§19 與 SRS／SA／SD 0.51，使用者確認或改選後轉為 U 決策。
+第三版時沒有待確認項目（2026-10-26 使用者回覆「全部如建議」，原 Q1～Q21 全部轉為 §0 的決策，對照如下）。第四版新增 Q22～Q26：表內「建議」已先寫進 §17～§19 與 SRS／SA／SD 0.51，使用者確認或改選後轉為 U 決策。第五版新增 Q27～Q31（人工接管，§20），建議同樣已先寫進 §20 與 0.52。
 
 | 編號 | 問題 | 建議 | 替代方案 |
 |---|---|---|---|
@@ -625,6 +635,11 @@ Jira webhook 只記錄外部觀測，不反向改平台狀態，也不觸發維�
 | Q24 | 資源鎖等待上限 | 30 分鐘，可配置；到期轉 PENDING_HUMAN 並通知，不自動重排 | 不設上限，一直排隊（只在 Web 顯示等待時間） |
 | Q25 | worker 預設值；SD-01.10 原「修改方案 worker 上限 1」等於全平台一次只修一個資源 | 修改 worker 預設 2、唯讀 worker 4、流程推進 worker 8、Qwen 並行 4，全部可配置；同一資源仍由資源鎖保證只有一個 | 維持修改 worker 1（資源鎖只在調大後才有實益） |
 | Q26 | Web 回應時間目標（NFR-A11） | 10 萬筆時清單 P95 ≤ 1 秒、明細 P95 ≤ 2 秒 | 不設數值，只做壓測紀錄 |
+| Q27 | 公司是否核准把遮罩後的接管包交給訂閱制商用模型的供應商；可用哪些工具 | 法務／資安確認供應商條款與資料政策前，功能預設停用（`takeover.enabled=false`）；核准後以 allowlist 列出工具（例如 `CODEX_CLI`、`CLAUDE_CODE`） | 只允許在網頁版對話貼上摘要，不允許能執行指令的 CLI |
+| Q28 | 接管包裡的內部 hostname、IP、內部 URL 要不要遮罩 | 預設換成同一包內一致的別名（`res-…`）；對照只在平台 Web 明細顯示，不放進接管包 | 依 export policy 保留真名（操作者較好對照，但真名會到供應商） |
+| Q29 | 強制結案時關聯告警仍在 FIRING，是否允許 | 允許，但畫面警示並要求勾選「告警仍在觸發，我確認結案」，寫入稽核；之後再 FIRING 依設計文件 B §4.5 處理 | FIRING 時不允許強制結案 |
+| Q30 | Web 是否提供接管相關操作（接管、產生／下載接管包、寫回、強制結案、結束接管） | 提供：不論 Q23 結果，這五個操作都放在明細頁（POST＋CSRF＋稽核），與 API 共用同一 use case | 本版只做 API，Web 只顯示接管狀態與寫回內容 |
+| Q31 | 接管中由人或商用模型提出、經平台執行的計畫，能不能走自動修復白名單 | 不能；一律 PENDING_APPROVAL 核准（可自行核准，U22） | 計畫與已發布方案完全相同且符合白名單條件時，允許走白名單 |
 
 | 原編號 | 決策 | 原編號 | 決策 | 原編號 | 決策 |
 |---|---|---|---|---|---|
@@ -740,6 +755,128 @@ worker 數量全部可配置。建議預設（Q25）：流程推進 8、唯讀 Q
 
 ---
 
+## 20. 商用模型人工接管與強制結案（U39～U42）
+
+### 20.1 可行性評估
+
+結論：**可行，但只做成人工逃生口，不做成平台的模型備援。** 平台本身不呼叫商用模型，只負責匯出接管包、記錄接管、接收寫回與強制結案；沿用既有的遮罩投影、case_event 稽核、結案草稿與 Jira 同步，新增三張表與兩個轉換（T27、T28）。
+
+| 面向 | 評估 |
+|---|---|
+| 技術 | 可行，改動集中：新增 `manual_takeover`、`takeover_package`、`takeover_writeback`；狀態機加 T27（接管 → PENDING_HUMAN）、T28（強制結案）；`work_task` 可取消。其餘流程與 U14 不變 |
+| 條款（主要風險） | 訂閱方案（ChatGPT Plus／Pro、Claude Pro／Max）的條款以個人、互動使用為主：不能讓平台以程式代替人呼叫、不能做成無人值守的後端、不能共用帳號。導入前由法務／資安重新確認當時的供應商條款（Q27） |
+| 資料外送 | 接管包經操作者交給商用模型供應商，等同外部模型外送：只含 EXTERNAL_EXPORT_SAFE 投影，且供應商須經公司核准（§12.1） |
+| 額度 | 訂閱有用量上限與速率限制，故障高峰時可能用完；不能當 SLA，Qwen 仍是主要模型 |
+| 責任 | 平台外由操作者或其 CLI 做的事，平台無法控制、也無法驗證，由操作者負責並寫進寫回 |
+| 與 U14 的關係 | U14 不變：Qwen 不可用時只暫停 AI 步驟，偵測、開案、Jira、已核准計畫與白名單自動修復**照常執行**。接管是使用者逐案額外選擇的手段 |
+
+### 20.2 觸發與範圍
+
+- 只能由人觸發：Web 明細頁「改由商用模型接管」或 `POST /api/v1/work-items/{itemId}/takeover`。平台不會因 Qwen 失敗、逾時或 `LLM_UNAVAILABLE` 自動接管或自動外送。
+- 任何非 CLOSED 狀態都可以接管；最常見的是卡在 Qwen 的案件（`blocked_reason=LLM_UNAVAILABLE`，多半在 COLLECTING、MATCHING、PROPOSING，或 CLOSURE_REVIEW 產生摘要時）。
+- 必填：工具（可配置清單，例如 `CODEX_CLI`、`CLAUDE_CODE`、`CHATGPT_WEB`、`CLAUDE_WEB`、`OTHER`，Q27）、模型名稱（自由文字，填操作者實際使用的模型）、接管原因。
+- 同一工作項目同時只有一筆進行中的接管；另一位使用者可以「改由我接手」，前一筆標 `HANDED_OVER`。
+- 接管不影響 kill switch 與 resource_hold（§13.2）。
+- 入口與其他控制命令一樣集中在平台的管理 API（控制總線 11.2，p.396）。
+
+### 20.3 接管時平台做的事（同一交易）
+
+1. 寫 `manual_takeover`（ACTIVE：接管者、時間、工具、模型、原因、來源狀態）、`work_activity`（kind=`TAKEOVER`，started）、case_event `TAKEOVER_STARTED`。
+2. 狀態：不在 PENDING_HUMAN 時經 T27 轉 PENDING_HUMAN；已在 PENDING_HUMAN 時不轉換。清除 `blocked_reason=LLM_UNAVAILABLE`，設定 `active_takeover_id`。
+3. 取消該案排隊中的工作：READY 的 `work_task` 改 `CANCELLED`（VERIFY_SAMPLE 例外，見第 5 點）。已送出的 Qwen 呼叫不中斷，回應到達時只存成證據並標 `IGNORED_AFTER_TAKEOVER`，不推進流程。
+4. 待決事項：尚未決定的 `approval` 改 SUPERSEDED（不能再核准舊提案）；CLOSURE_REVIEW 中的草稿保留供參考，結案時改由寫回產生新版本。
+5. 修改中的案件（APPLYING／VERIFYING）：
+   - 根執行還沒取得任何 CHANGE 發送許可（QUEUED、PRECHECKING、等待資源鎖）→ 根執行 CANCELLED、`resource_lock_waiter` 改 CANCELLED、已持有的鎖釋放。
+   - 可能已派送（RUNNING、D02 查核中）→ 不中斷、不重送，也不派送下一個步驟；回應照常保存。鎖依既有規則：結果可靠保存且沒有在途效果才釋放，否則轉 resource_hold（§19.5、SD-07.3）。
+   - VERIFYING 中已排定的 VERIFY 取樣照原規格跑完並保存（唯讀），但不再觸發 T19／T20；跑完後依 §19.3 釋放或轉 hold。
+6. Qwen 恢復：接管中或已強制結案的案件不自動續做（§13.4）。結束接管（§20.8）後，也要使用者以 T21／T22 明確要求，平台才再用 Qwen。
+
+### 20.4 接管包
+
+- 產生：接管後由使用者按「產生接管包」；伺服器端組裝、遮罩、存檔後才提供下載（消息存儲庫 11.6，p.405）。每次產生是新版本，不覆寫舊版。
+- 格式：一個 zip：
+
+| 檔案 | 內容 |
+|---|---|
+| `README.md` | 案件摘要、目前狀態、操作者須知（平台外動作自負、寫回格式）、給 CLI 的建議提示詞 |
+| `item.json` | item_no、類型、狀態、blocked_reason 歷程、signal_state、環境、資源（遮罩後） |
+| `alerts.json` | 關聯告警群組與標準化事件（安全投影，不含 raw payload） |
+| `timeline.json` | case_event 與 work_activity（安全投影） |
+| `evidence/` | 已收集的調查證據，EXTERNAL_EXPORT_SAFE 投影，每筆附 evidence_id |
+| `proposals.json` | 已提出的解法、計畫實例、核准紀錄、執行與驗證結果 |
+| `rules.json` | 與本案資源有關的已發布 solution／command 目錄，以及自動修復白名單規則與條件（U9、U16） |
+| `writeback-template.json` | 寫回格式（§20.5），操作者可直接填寫後上傳 |
+| `manifest.json` | package_id、版本、產生者與時間、每個檔案的 SHA-256、遮罩政策版本、遮罩統計、被排除的項目數 |
+
+- 遮罩規則：在伺服器端執行，SecretFilter／OutputGuard 之上再套 EXTERNAL_EXPORT_SAFE allowlist（只輸出 allowlist 列出的欄位）：
+
+| 類別 | 處理 |
+|---|---|
+| 密碼、token、API key、Cookie、session ID、JWT、私鑰與憑證內容、`Authorization` 標頭 | 換成 `[REDACTED:<類別>]`，不保留長度或前後綴 |
+| 連線字串、帶帳密的 URL（`user:pass@`）、參數名含 `token`／`key`／`secret`／`password` 的值 | 帳密與值換成 `[REDACTED]`，保留協定與主機（主機依下一列） |
+| 內部 hostname、IP、內部 URL | 依 export policy；建議預設換成同一包內一致的別名 `res-<短碼>`，對照表不放進包內（Q28） |
+| secret reference、Vault 路徑、內部憑證名稱 | 換成 `[SECRET_REF]` |
+| 人員帳號、email、Teams ID | 換成 `user-<短碼>`；操作者本人保留 |
+| raw evidence、聊天全文、其他案件資料 | 不輸出 |
+| 偵測器無法確定的高風險片段 | 整段排除，manifest 記錄排除數量與 evidence_id |
+
+- 任何遮罩元件失效就拒絕產生，不回退原文（§12.1、SD-03.3）。
+- 授權：每次產生視為一次外送，使用 §12.1 的外部模型 grant（目的 `MANUAL_TAKEOVER`、資料清單、期限）；供應商未核准時不能產生（Q27）。
+- 稽核：產生（`TAKEOVER_PACKAGE_CREATED`，含 hash 與遮罩統計）與每次下載（`TAKEOVER_PACKAGE_DOWNLOADED`，誰、何時、來源 IP）都寫 case_event。下載連結綁 session、一次性、15 分鐘有效。
+
+### 20.5 平台外處理與寫回
+
+- 操作者在自己的機器、用自己的訂閱帳號執行 CLI：非互動（例如 `codex exec`、`claude -p`）或互動模式都可以。建議用唯讀或規劃模式，讓模型只分析不動手（實際參數依工具版本確認）。
+- 平台不提供 API key、不經 LiteLLM、不發機器 token 給 CLI 回呼（U42）；寫回一律由已登入的人在 Web 或 API（session＋CSRF）送出。
+- 寫回（`takeover_writeback`，可多版）：
+
+| 欄位 | 必填 |
+|---|---|
+| 摘要 | 是 |
+| 根因（或勾選「根因未確認」） | 是 |
+| 已執行的處置：每筆標 `PLATFORM`（引用 execution_id）或 `OFF_PLATFORM`（目標、時間、執行者、內容、結果） | 是（沒有就填「無」） |
+| 驗證證據：說明＋附件、截圖或指令輸出 | 是 |
+| 使用的工具、模型、接管包版本 | 是（預設帶入） |
+| 剩餘風險、後續建議、是否建立知識草稿 | 否 |
+| 「平台外動作由我負責」確認 | 有 `OFF_PLATFORM` 時必勾 |
+
+- 寫回的文字與附件先經 SecretFilter，再存成 `evidence_record`（origin=`MANUAL_TAKEOVER`，視為低信任資料）；每筆 `OFF_PLATFORM` 另寫 `MANUAL_ACTION` 事件（同 U15）。
+- 商用模型的輸出只是資料，不能直接變成平台命令。
+
+### 20.6 接管中經平台執行修改
+
+- 要平台執行修改時，接管者經 T22 送出計畫：只能引用已發布的 command／solution（§8.3），來源記為 `MANUAL_TAKEOVER`；T11 → PENDING_APPROVAL，照常核准（可自行核准，U22）、取得資源鎖、檢查 kill switch 與派送前條件。
+- 接管中提出的計畫不走自動修復白名單（建議，Q31）。
+- 執行與驗證後照常 T19（CLOSURE_REVIEW）或 T20（PENDING_HUMAN）；接管仍為 ACTIVE，可在任一狀態強制結案（T28）。
+- 接管中不提供 T21（重新調查需要 Qwen）；要回平台流程請先結束接管。
+
+### 20.7 強制結案
+
+- 條件：接管 ACTIVE；至少一版寫回；該案沒有可能已派送且未終態的執行（否則按鈕停用並說明原因）；使用者再次確認（輸入 item_no）。
+- T28（同一交易）：狀態 → CLOSED、`closure_reason=FORCED_BY_COMMERCIAL_MODEL`；以最新寫回產生並鎖定一版 `closure_draft`（產生者 `MANUAL_TAKEOVER`、確認者＝操作者），**不經 CLOSURE_REVIEW**；`manual_takeover` → CLOSED；`work_activity`（TAKEOVER）finished；剩餘 READY 任務 CANCELLED；寫 case_event `FORCE_CLOSED`。
+- 關聯告警仍 FIRING：建議允許，但須勾選確認並寫稽核（Q29）。
+- resource_hold 與 kill switch 不因結案清除，仍依 §13.2 另行解除。
+- Jira：照常送狀態同步（§10.4）；Confluence 報告照 `record_policy`。
+- 知識：可依寫回建立知識草稿，標記來源為商用模型接管，須照 §11 審查才發布。
+- 結案後同一群組再 FIRING：依設計文件 B §4.5（重開窗內重開，窗外新開）。
+
+### 20.8 結束接管（不結案）
+
+「結束接管」：`manual_takeover` → RELEASED、`work_activity` finished、寫 case_event `TAKEOVER_RELEASED`；狀態維持 PENDING_HUMAN，之後依 T21～T24 照常處理。
+
+### 20.9 Web 與 API
+
+- 採 Web 例外（建議，Q30）：不論 Q23 結果，明細頁都新增「人工接管」區塊，提供接管／接手、產生與下載接管包、寫回、強制結案、結束接管五個操作；全部以 POST＋CSRF 送出，與 API 共用同一 use case、Idempotency-Key 與 `row_version` 檢查，每次操作寫稽核。
+- API（session＋CSRF，SD-01.7）：`POST …/takeover`、`POST …/takeover/packages`、`GET …/takeover/packages/{version}/download`、`POST …/takeover/writebacks`、`POST …/force-close`、`POST …/takeover/release`，路徑前綴 `/api/v1/work-items/{itemId}`。
+- 不提供給 CLI 自動呼叫的長效 token；這是刻意的：避免把訂閱方案變成無人值守的後端（U42）。
+
+### 20.10 稽核與指標
+
+- case_event：`TAKEOVER_STARTED`、`TAKEOVER_HANDED_OVER`、`TAKEOVER_PACKAGE_CREATED`、`TAKEOVER_PACKAGE_DOWNLOADED`、`TAKEOVER_WRITEBACK_SUBMITTED`、`FORCE_CLOSED`、`TAKEOVER_RELEASED`。
+- 指標（加到 §13.3）：接管次數（依原因、工具）、接管時長、強制結案比例、強制結案後 7 天內重開比例、接管包遮罩排除數。
+
+---
+
 ## 附錄 A：舊文件應移除或修改的條文清單
 
 圖例：**刪除**＝整段移除；**修改**＝保留主旨、改寫內容；**取代**＝由本文件某節取代。文件代號：SRS＝`DevOps_智慧維運應用需求規格書_草案.md`，SA＝`DevOps_智慧維運應用系統分析規格書_草案.md`，SD＝`DevOps_智慧維運應用系統設計規格書_草案.md`。
@@ -832,8 +969,11 @@ worker 數量全部可配置。建議預設（Q25）：流程推進 8、唯讀 Q
 | 84 | SD | SD-14.10 「D08 ADMIN 逐案啟動」、「14 待確認：已決定政策轉已確認」 | 修改 | U13；政策以已對齊需求 §0 為準 |
 | 85 | SD | SD-01.10「修改方案 worker 上限 1」 | 修改 | U37、U38：改為可配置，同一資源由資源鎖保證互斥（建議預設 2，Q25） |
 | 86 | 程式 | `web` 模組 `SecurityConfiguration` 依 `config/roles.yml` 拒絕沒有角色的帳號；`ManagementWebSecurityConfiguration` 只在 `demo` profile | 修改 | U13、U35：登入只看 LDAP 驗證與登入範圍，不查角色；Web 登入 chain 改為正式設定（SD-17.3） |
+| 87 | SA | SA-08.2、SA-11.6「Qwen 不可用時不以外部模型當 fallback」 | 修改 | U39：平台自動 fallback 仍禁止；補上使用者逐案、平台外的商用模型人工接管（§20） |
+| 88 | SD | SD-14.5 `ExternalAssistGrant` 目的與「不以 external provider 為技術 fallback」 | 修改 | U39、U40：grant 新增目的 `MANUAL_TAKEOVER`（接管包外送）；仍不自動 fallback |
+| 89 | SRS | FR-25、D08「不以核心／Qwen 故障作 fallback」 | 修改 | U39：補人工接管例外 |
 
-合計 **86 項**：刪除 14 項、取代 4 項、修改 67 項、新增 1 項（第四版新增 85、86 兩項）。主題分布大致為：角色／權限 約 30 項、狀態機與資料表合併 約 10 項、逐案同意與 Jira 補送矛盾 約 10 項、Qwen 全域停止 6 項、故障後停止監控與禁止自動修復 約 12 項、分期／多 bot／版本與 banner 約 12 項。
+合計 **89 項**：刪除 14 項、取代 4 項、修改 70 項、新增 1 項（第四版新增 85、86 兩項；第五版新增 87～89 三項）。主題分布大致為：角色／權限 約 30 項、狀態機與資料表合併 約 10 項、逐案同意與 Jira 補送矛盾 約 10 項、Qwen 全域停止 6 項、故障後停止監控與禁止自動修復 約 12 項、分期／多 bot／版本與 banner 約 12 項。
 
 ## 附錄 B：EIP 模式對照
 
@@ -856,5 +996,7 @@ worker 數量全部可配置。建議預設（Q25）：流程推進 8、唯讀 Q
 | case_event、稽核 | 消息歷史（11.5，p.402）、消息存儲庫（11.6，p.405） |
 | kill switch、管理 API | 控制總線（11.2，p.396） |
 | `work_task` 佇列，多個 worker 以 SKIP LOCKED 領取（§19.1） | 競爭消費者（10.7，p.370） |
+| 人工接管、結束接管、強制結案命令（§20.2、§20.7） | 控制總線（11.2，p.396） |
+| 接管包：遮罩後存檔、版本化、可重複下載並稽核（§20.4） | 消息存儲庫（11.6，p.405） |
 | 等待核准／補資料／Qwen 時保存狀態、事件到達才喚醒（§19.2） | 過程管理器（7.12，p.219） |
 | 監控來源自我檢查（合成探測） | 測試消息（11.8，p.416） |
