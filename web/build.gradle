@@ -7,6 +7,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.flywaydb:flyway-core'
     testImplementation 'com.tngtech.archunit:archunit:1.5.1'
     testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
@@ -24,6 +26,8 @@ configurations {
 }
 dependencies {
     integrationTestImplementation testFixtures(project(':adapter'))
+    integrationTestImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    integrationTestImplementation 'org.testcontainers:testcontainers-postgresql'
     integrationTestImplementation project(':model-quality-evaluation')
     integrationTestImplementation project(':solution-tool-testing')
 }

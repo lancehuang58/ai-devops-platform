@@ -4,9 +4,13 @@ import com.delta.dms.ops.aidevopsplatform.model.alert.AlertGroup;
 import com.delta.dms.ops.aidevopsplatform.model.alert.AlertGroupState;
 import com.delta.dms.ops.aidevopsplatform.model.alert.AlertTiming;
 import com.delta.dms.ops.aidevopsplatform.model.alert.CanonicalAlert;
+import com.delta.dms.ops.aidevopsplatform.model.alert.CorrelationBinding;
 import com.delta.dms.ops.aidevopsplatform.model.alert.Fingerprint;
 import com.delta.dms.ops.aidevopsplatform.model.alert.GroupStatus;
+import com.delta.dms.ops.aidevopsplatform.model.alert.IngestResult;
+import com.delta.dms.ops.aidevopsplatform.model.alert.PendingNotice;
 import com.delta.dms.ops.aidevopsplatform.model.alert.Severity;
+import com.delta.dms.ops.aidevopsplatform.model.sync.DueSync;
 import com.delta.dms.ops.aidevopsplatform.model.sync.SyncRetryPolicy;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -295,6 +299,68 @@ public final class JdbcPlatformStore {
 
     public int syncAttempts(UUID requestId) {
         return jdbc.queryForObject("SELECT attempt_count FROM external_sync_request WHERE request_id = ?", Integer.class, requestId);
+    }
+
+    public List<DueSync> claimDueSyncs(Instant now, int limit) {
+        return tx.execute(status -> {
+            var claimed = jdbc.query("""
+                    WITH due AS (
+                        SELECT request_id FROM external_sync_request
+                         WHERE status IN ('PENDING', 'RETRY_WAIT') AND next_attempt_at <= ?
+                         ORDER BY next_attempt_at, request_id
+                         FOR UPDATE SKIP LOCKED
+                         LIMIT ?)
+                    UPDATE external_sync_request r
+                       SET status = 'SENDING', row_version = row_version + 1
+                      FROM due
+                     WHERE r.request_id = due.request_id
+                    RETURNING r.request_id, r.item_id
+                    """, (rs, n) -> new UUID[]{rs.getObject(1, UUID.class), rs.getObject(2, UUID.class)}, ts(now), limit);
+            var due = new java.util.ArrayList<DueSync>();
+            for (var row : claimed) {
+                var item = jdbc.queryForObject("SELECT item_no, title FROM work_item WHERE item_id = ?",
+                        (rs, n) -> new String[]{rs.getString(1), rs.getString(2)}, row[1]);
+                due.add(new DueSync(row[0], item[0], item[1]));
+            }
+            return due;
+        });
+    }
+
+    public void succeedSync(UUID requestId, Instant now) {
+        tx.executeWithoutResult(status -> {
+            jdbc.update("UPDATE external_sync_request SET status = 'SUCCEEDED', row_version = row_version + 1 WHERE request_id = ?", requestId);
+            jdbc.update("INSERT INTO external_sync_attempt (attempt_id, request_id, attempted_at, outcome, error_class) VALUES (?, ?, ?, 'SUCCEEDED', NULL)",
+                    UUID.randomUUID(), requestId, ts(now));
+        });
+    }
+
+    public void completeTask(UUID taskId) {
+        jdbc.update("UPDATE work_task SET status = 'DONE', lease_until = NULL WHERE task_id = ?", taskId);
+    }
+
+    public String taskStatus(UUID taskId) {
+        return jdbc.queryForObject("SELECT status FROM work_task WHERE task_id = ?", String.class, taskId);
+    }
+
+    public void postponeSyncs(Instant when) {
+        jdbc.update("UPDATE external_sync_request SET next_attempt_at = ? WHERE status IN ('PENDING', 'RETRY_WAIT')", ts(when));
+    }
+
+    public int taskCount(UUID itemId, String status) {
+        return jdbc.queryForObject("SELECT count(*) FROM work_task WHERE item_id = ? AND status = ?", Integer.class, itemId, status);
+    }
+
+    public String primaryResource(UUID itemId) {
+        return jdbc.queryForObject("SELECT primary_resource_id FROM work_item WHERE item_id = ?", String.class, itemId);
+    }
+
+    public List<PendingNotice> pendingNotifications() {
+        return jdbc.query("SELECT dedup_key, body FROM notification_outbox WHERE status = 'PENDING' ORDER BY updated_at",
+                (rs, n) -> new PendingNotice(rs.getString(1), rs.getString(2)));
+    }
+
+    public void markNotificationSent(String dedupKey, Instant now) {
+        jdbc.update("UPDATE notification_outbox SET status = 'SENT', updated_at = ? WHERE dedup_key = ?", ts(now), dedupKey);
     }
 
     private void ensureSource(CanonicalAlert alert) {

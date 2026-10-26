@@ -21,6 +21,6 @@ public final class ConfiguredRoles implements RoleDirectory, QueryAuthorization 
     }
     @Override public Set<String> rolesFor(String username) { return assignments.getOrDefault(username,Set.of()); }
     @Override public void requireAllowed(String actor, String resource) {
-        if(rolesFor(actor).isEmpty()) throw new SecurityException("Query permission denied");
+        if(actor == null || actor.isBlank()) throw new SecurityException("Query permission denied");
     }
 }

@@ -1,6 +1,7 @@
 package com.delta.dms.ops.aidevopsplatform.adapter.persistence;
 
 import com.delta.dms.ops.aidevopsplatform.model.alert.CanonicalAlert;
+import com.delta.dms.ops.aidevopsplatform.model.alert.CorrelationBinding;
 import com.delta.dms.ops.aidevopsplatform.model.alert.Fingerprint;
 import com.delta.dms.ops.aidevopsplatform.model.alert.GroupStatus;
 import com.delta.dms.ops.aidevopsplatform.model.alert.Severity;

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>進行中的工作項目｜AI DevOps 平台</title>
+    <link rel="stylesheet" th:href="@{/css/management.css}">
+    <script th:src="@{/vendor/htmx/htmx.min.js}"></script>
+</head>
+<body class="console" hx-boost="true">
+<main>
+    <header class="bar">
+        <h1>進行中的工作項目</h1>
+        <form th:action="@{/logout}" method="post" hx-boost="false"><button type="submit">登出</button></form>
+    </header>
+    <form class="filters" method="get" th:action="@{/work-items}">
+        <label>系統 <input name="system" type="text" th:value="${system}"></label>
+        <label>更新自 <input name="from" type="datetime-local" th:value="${from}"></label>
+        <label>更新至 <input name="to" type="datetime-local" th:value="${to}"></label>
+        <label>狀態
+            <select name="status">
+                <option value="" th:selected="${status == ''}">未結案</option>
+                <option value="ALL" th:selected="${status == 'ALL'}">全部</option>
+                <option th:each="name : ${statuses}" th:value="${name}" th:text="${name}" th:selected="${status == name}"></option>
+            </select>
+        </label>
+        <label>每頁
+            <select name="size">
+                <option value="20" th:selected="${size == 20}">20</option>
+                <option value="50" th:selected="${size == 50}">50</option>
+                <option value="100" th:selected="${size == 100}">100</option>
+            </select>
+        </label>
+        <button type="submit">篩選</button>
+    </form>
+    <p class="meta" th:text="|共 ${total} 筆，第 ${page} / ${totalPages == 0 ? 1 : totalPages} 頁|">共 0 筆</p>
+    <p th:if="${#lists.isEmpty(rows)}">沒有符合條件的工作項目。</p>
+    <table th:if="${!#lists.isEmpty(rows)}">
+        <thead>
+        <tr><th>編號</th><th>類型</th><th>狀態</th><th>標題</th><th>環境</th><th>資源</th><th>更新時間（台北）</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="row : ${rows}">
+            <td><a th:href="@{/work-items/{no}(no=${row.itemNo})}" th:text="${row.itemNo}">OPS</a></td>
+            <td th:text="${row.itemType}">INCIDENT</td>
+            <td th:text="${row.status}">NEW</td>
+            <td th:text="${row.title}">title</td>
+            <td th:text="${row.environment}">PROD</td>
+            <td th:text="${row.resourceId}">vm</td>
+            <td th:text="${row.updatedAt}">time</td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="pager">
+        <a th:if="${page > 1}" th:href="@{/work-items(system=${system},from=${from},to=${to},status=${status},page=${page - 1},size=${size})}">上一頁</a>
+        <a th:if="${page < totalPages}" th:href="@{/work-items(system=${system},from=${from},to=${to},status=${status},page=${page + 1},size=${size})}">下一頁</a>
+    </p>
+</main>
+</body>
+</html>
