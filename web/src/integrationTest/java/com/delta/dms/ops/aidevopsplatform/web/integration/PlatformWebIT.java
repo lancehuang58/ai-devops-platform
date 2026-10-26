@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         properties = "platform.workflow.workers=0")
 class PlatformWebIT {
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");
+    static final MockOidcServer OIDC = startOidc();
     private static final Pattern CSRF = Pattern.compile("<input[^>]*name=\"_csrf\"[^>]*value=\"([^\"]+)\"", Pattern.CASE_INSENSITIVE);
 
     static { POSTGRES.start(); }
@@ -47,8 +48,19 @@ class PlatformWebIT {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
-        registry.add("platform.auth.users.ops.password", () -> "ops-secret");
         registry.add("platform.auth.alert-token", () -> "test-token");
+        registry.add("platform.gitlab.base-url", OIDC::issuer);
+        registry.add("GITLAB_BASE_URL", OIDC::issuer);
+        registry.add("GITLAB_OAUTH_CLIENT_ID", () -> "platform-test");
+        registry.add("GITLAB_OAUTH_CLIENT_SECRET", () -> "platform-test-secret");
+        for (var name : new String[]{"GITLAB_TOKEN", "JENKINS_TOKEN", "GLOVE_TOKEN", "JIRA_TOKEN", "TEAMS_WEBHOOK", "LITELLM_API_KEY"}) {
+            registry.add(name, () -> "test-secret");
+        }
+    }
+
+    private static MockOidcServer startOidc() {
+        try { return new MockOidcServer(); }
+        catch (Exception ex) { throw new IllegalStateException(ex); }
     }
 
     @LocalServerPort int port;
@@ -61,7 +73,7 @@ class PlatformWebIT {
             assertThat(location(page)).startsWith("/login");
             var login = get(client, "/login");
             assertThat(login.statusCode()).isEqualTo(200);
-            assertThat(login.body()).contains("本地目錄");
+            assertThat(login.body()).contains("GitLab", "/oauth2/authorization/gitlab").doesNotContain("name=\"password\"");
             var script = get(client, "/vendor/htmx/htmx.min.js");
             assertThat(script.statusCode()).isEqualTo(200);
             assertThat(script.body()).contains("htmx");
@@ -73,8 +85,8 @@ class PlatformWebIT {
         var duplicate = postAlert("evt-web-1");
         assertThat(duplicate.statusCode()).isEqualTo(202);
         assertThat(duplicate.body()).contains("\"duplicates\":1");
-        try (var client = login()) {
-            var list = get(client, "/work-items");
+        try (var client = login("/work-items?system=jenkins")) {
+            var list = get(client, "/work-items?system=jenkins");
             assertThat(list.statusCode()).isEqualTo(200);
             assertThat(list.body()).contains("log disk high", "/vendor/htmx/htmx.min.js", "value=\"50\"");
             assertThat(get(client, "/work-items?status=CLOSED").body()).doesNotContain("log disk high");
@@ -158,13 +170,39 @@ class PlatformWebIT {
         throw new AssertionError("missing " + title);
     }
 
-    private HttpClient login() throws Exception {
+    private HttpClient login() throws Exception { return login("/work-items"); }
+
+    private HttpClient login(String deepLink) throws Exception {
         var client = client();
-        var token = csrf(get(client, "/login").body());
-        var response = postForm(client, "/login", "_csrf=" + enc(token) + "&username=ops&password=ops-secret");
-        assertThat(response.statusCode()).isEqualTo(302);
-        assertThat(location(response)).startsWith("/work-items");
+        var anonymous = get(client, deepLink);
+        assertThat(anonymous.statusCode()).isEqualTo(302);
+        assertThat(location(anonymous)).startsWith("/login");
+        var form = get(client, "/login");
+        assertThat(form.body()).contains("GitLab", "/oauth2/authorization/gitlab").doesNotContain("name=\"password\"");
+        var started = get(client, "/oauth2/authorization/gitlab");
+        assertThat(started.statusCode()).isEqualTo(302);
+        var authorize = started.headers().firstValue("Location").orElseThrow();
+        var decoded = java.net.URLDecoder.decode(authorize, StandardCharsets.UTF_8);
+        assertThat(decoded).contains("openid", "profile", "email", "client_id=platform-test");
+        var granted = client.send(HttpRequest.newBuilder(URI.create(authorize)).timeout(Duration.ofSeconds(10)).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertThat(granted.statusCode()).isEqualTo(302);
+        var landed = follow(client, granted.headers().firstValue("Location").orElseThrow());
+        assertThat(landed).isEqualTo(deepLink);
         return client;
+    }
+
+    private String follow(HttpClient client, String start) throws Exception {
+        var current = start;
+        for (int hop = 0; hop < 8; hop++) {
+            var request = current.startsWith("http")
+                    ? HttpRequest.newBuilder(URI.create(current))
+                    : HttpRequest.newBuilder(URI.create(url(current)));
+            var response = client.send(request.timeout(Duration.ofSeconds(10)).GET().build(), HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 302) return pathAndQuery(current);
+            current = response.headers().firstValue("Location").orElseThrow();
+        }
+        throw new AssertionError("too many redirects from " + start);
     }
 
     private HttpClient client() {
@@ -188,6 +226,12 @@ class PlatformWebIT {
         Matcher matcher = CSRF.matcher(html);
         assertThat(matcher.find()).isTrue();
         return matcher.group(1);
+    }
+
+    private static String pathAndQuery(String current) {
+        var uri = URI.create(current);
+        if (!uri.isAbsolute()) return current;
+        return uri.getRawQuery() == null ? uri.getRawPath() : uri.getRawPath() + "?" + uri.getRawQuery();
     }
 
     private String location(HttpResponse<String> response) {
