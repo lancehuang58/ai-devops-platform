@@ -144,6 +144,23 @@ class PlatformWebIT {
         }
     }
 
+    @Test void chatIsBehindOidcAndCsrfAndCanClearSessionHistory() throws Exception {
+        try (var anonymous = client()) {
+            assertThat(get(anonymous, "/chat").statusCode()).isEqualTo(302);
+        }
+        try (var client = login("/chat")) {
+            var page = get(client, "/chat");
+            assertThat(page.statusCode()).isEqualTo(200);
+            assertThat(page.body()).contains("AI 對話", "/vendor/htmx/htmx.min.js");
+            assertThat(postForm(client, "/chat", "message=hello").statusCode()).isEqualTo(403);
+            var sent = postForm(client, "/chat", "_csrf=" + enc(csrf(page.body())) + "&message=hello");
+            assertThat(sent.statusCode()).isEqualTo(200);
+            assertThat(sent.body()).contains("hello", "尚未啟用");
+            assertThat(postForm(client, "/chat/clear", "_csrf=" + enc(csrf(sent.body()))).statusCode()).isEqualTo(302);
+            assertThat(get(client, "/chat").body()).doesNotContain("hello");
+        }
+    }
+
     private HttpResponse<String> postAlert(String eventSuffix) throws Exception {
         try (var client = client()) {
             return client.send(HttpRequest.newBuilder(URI.create(url("/api/v1/alerts/alertmanager")))

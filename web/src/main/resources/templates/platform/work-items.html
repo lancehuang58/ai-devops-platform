@@ -11,6 +11,7 @@
 <main>
     <header class="bar">
         <h1>進行中的工作項目</h1>
+        <a th:href="@{/chat}">AI 對話</a>
         <form th:action="@{/logout}" method="post" hx-boost="false"><button type="submit">登出</button></form>
     </header>
     <form class="filters" method="get" th:action="@{/work-items}">

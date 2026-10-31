@@ -14,6 +14,11 @@ class ChatStartupTest {
                     assertThat(context.getBean(ChatUseCase.class).reply("hi", java.util.List.of()).answer()).contains("尚未啟用");
                 });
     }
+    @Test void enablingFlagAloneDoesNotActivateOutsidePlatformProfile() {
+        new ApplicationContextRunner().withUserConfiguration(ChatConfiguration.class)
+                .withPropertyValues("platform.chat.enabled=true")
+                .run(context -> assertThat(context).hasNotFailed().doesNotHaveBean(ChatUseCase.class));
+    }
     @Test void defaultProfileDoesNotCreateChatBeans() {
         new ApplicationContextRunner().withUserConfiguration(ChatConfiguration.class)
                 .run(context -> assertThat(context).hasNotFailed().doesNotHaveBean(ChatUseCase.class));

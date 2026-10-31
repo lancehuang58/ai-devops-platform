@@ -18,7 +18,7 @@ import java.util.Arrays;
 @Profile("platform")
 public class PlatformWebSecurityConfiguration {
     static final String[] UI_PATHS = {"/", "/login", "/login-failure", "/home", "/work-items", "/work-items/**",
-            "/logout", "/css/**", "/vendor/**", "/oauth2/**", "/login/oauth2/**"};
+            "/chat", "/chat/**", "/logout", "/css/**", "/vendor/**", "/oauth2/**", "/login/oauth2/**"};
     private static final RequestMatcher UI_POSTS = request -> Arrays.stream(UI_PATHS)
             .anyMatch(pattern -> PathPatternRequestMatcher.withDefaults()
                     .matcher(HttpMethod.POST, pattern).matches(request));
