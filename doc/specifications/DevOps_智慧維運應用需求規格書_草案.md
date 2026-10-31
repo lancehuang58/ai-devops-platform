@@ -1,10 +1,10 @@
 # DevOps 智慧維運應用需求規格書
 
-需求基準草案｜版本 0.53｜依據已對齊需求第六版（U1～U45）｜2026 年 10 月 26 日（Asia/Taipei）
+需求基準草案｜版本 0.54｜依據已對齊需求第七版（U1～U48）｜2026 年 10 月 31 日（Asia/Taipei）
 
 ## 文件定位與整合依據
 
-本版依 [已對齊需求](aligned/aligned-requirements.md)（以下稱「已對齊需求」，45 項使用者決策 U1～U45）改寫 SRS 0.40，並與 SA 0.53、SD 0.53 同步。監控事件格式、去重與跨資源關聯見 [告警事件與去重設計](aligned/alert-event-and-dedup-design.md)（以下稱「設計文件 B」）。沿用 Spring Boot／Spring AI，不採 Rust。三份規格書與已對齊需求衝突時，以已對齊需求為準。
+本版依 [已對齊需求](aligned/aligned-requirements.md)（以下稱「已對齊需求」，48 項使用者決策 U1～U48）改寫 SRS 0.40，並與 SA 0.54、SD 0.54 同步。監控事件格式、去重與跨資源關聯見 [告警事件與去重設計](aligned/alert-event-and-dedup-design.md)（以下稱「設計文件 B」）。沿用 Spring Boot／Spring AI，不採 Rust。三份規格書與已對齊需求衝突時，以已對齊需求為準。
 
 本文件只定義目標、範圍、身分與稽核原則及驗收；流程與狀態見 SA，元件、API、資料與設定見 SD。兩個測試模組仍各自維護案例。尚無真實端點或測試資料，文件預期結果不代表實測通過。
 
@@ -118,6 +118,10 @@
 | FR-51 | GitLab 登入（U43）：platform Web 以公司自建 GitLab 的 OIDC authorization code 登入，scopes 為 `openid profile email`，GitLab base URL 與 client id／secret 來自設定。不把 GitLab 群組當角色；任何通過驗證的使用者看到相同內容。深連結在登入後回到原請求。測試使用 mock OIDC，不連真 GitLab（已對齊需求 §21.1）。 |
 | FR-52 | 服務目錄（U44）：受管服務與整合服務以 YAML 的型別化 `@ConfigurationProperties` 定義。秘密只允許 `${NAME}` 環境參考。啟動時拒絕缺欄位、解不出來的參考、未知 template type、未知 probe、重複 id 與字面秘密；日誌與錯誤訊息不含秘密值（已對齊需求 §21.2）。 |
 | FR-53 | 監控模板與探測鏈（U45）：模板提供預設探測、間隔與門檻；實例提供 id、type、environment、URL、憑證參考與覆寫。順序固定 endpoint → MCP → API → VM（Glove）。只有通道本身失敗才降級；通道回報不健康立刻開案；全部通道失敗才判定 down／unknown，單上帶每一層原因；較高通道失敗但較低通道健康時只發不重複的通道降級通知、不開事故單。結果記錄通道與 fallback 原因，並進入既有標準告警去重（source `probe`）。此順序不適用於變更執行（已對齊需求 §21.3）。 |
+| FR-54 | AI 對話（U46）：platform 登入後提供 `/chat`，Thymeleaf＋本地 htmx，session 最多保存 20 回合，可清除。訊息上限 4000 字；純文字跳脫輸出；同源 POST 需要 CSRF。預設停用外部連線，明確啟用後才建立模型與 MCP。 |
+| FR-55 | 需求分析（U47）：classpath 或設定位置載入 SKILL.md，先分類 incident／requirement／discussion、辨識目錄資源、規劃唯讀補查，再根據證據回覆診斷、未知事項與下一步；缺少目標時追問。模型故障不宣稱已查詢或已修復。 |
+| FR-56 | 模型與工具（U48）：Spring AI OpenAI 相容介面連 Qwen／LiteLLM；模型、base URL、API key 可設定；API key 與遠端 MCP token 僅接受原始 `${NAME}` 參考，啟動解析並遮罩。保留預設 `qwen-flash 3.8`，該精確 id 未獲官方文件證實。MCP 僅限目錄安全設定、過往監控狀態與目錄健康端點 GET；拒絕任意 URL／shell。新增遠端 Streamable HTTP MCP 透過管理者設定唯讀 binding，不能由模型挑選伺服器或原始工具名。對話不執行修復，既有白名單、核准與資源鎖政策繼續適用。 |
+
 
 ## SRS-05 組織與技術限制
 
@@ -245,7 +249,7 @@
 | D10 | 依 WorkItemStatus 單一映射同步 Jira workflow；transition ID 需配置驗證，不反向觸發維運 |
 | D11 | 由 U8 取代：不再寫分期；交付順序另由開發計畫管理 |
 
-版本：0.28 拆分 SRS／SA／SD；0.29 單 Bot；0.30 MQ／ST 分離；0.31 Job 備份刪除；0.32 自主唯讀與非敏感平等查詢；0.40 整合平台需求及 D01～11；0.50（2026-10-26）依已對齊需求 U1～U34 改寫：不分角色、單一狀態機、監控事件接入與去重、跨資源關聯、自動修復白名單、結案草稿確認、Jira 補送 5 次、Qwen 不可用只停 AI 步驟、移除分期與多 Bot 預留；0.51（2026-10-26）依 U35～U38 新增 Web 登入／清單／明細（FR-43、44）、並行推進與資源鎖（FR-45、46）、技術選型 CON-09、NFR-11、AC-23～26；0.52（2026-10-26）依 U39～U42 新增商用模型人工接管、接管包、寫回與強制結案（FR-47～50）、訂閱方案限制 CON-10、AC-27～30、ENV-15，FR-25 補人工接管例外。0.53（2026-10-26）依 U43～U45 新增 GitLab OIDC 登入、YAML 服務目錄與監控探測鏈（FR-51～53）、AC-31～33；CON-06、CON-09 改為 platform 使用 GitLab OIDC。舊版歷史保留在 git 紀錄。
+版本：0.28 拆分 SRS／SA／SD；0.29 單 Bot；0.30 MQ／ST 分離；0.31 Job 備份刪除；0.32 自主唯讀與非敏感平等查詢；0.40 整合平台需求及 D01～11；0.50（2026-10-26）依已對齊需求 U1～U34 改寫：不分角色、單一狀態機、監控事件接入與去重、跨資源關聯、自動修復白名單、結案草稿確認、Jira 補送 5 次、Qwen 不可用只停 AI 步驟、移除分期與多 Bot 預留；0.51（2026-10-26）依 U35～U38 新增 Web 登入／清單／明細（FR-43、44）、並行推進與資源鎖（FR-45、46）、技術選型 CON-09、NFR-11、AC-23～26；0.52（2026-10-26）依 U39～U42 新增商用模型人工接管、接管包、寫回與強制結案（FR-47～50）、訂閱方案限制 CON-10、AC-27～30、ENV-15，FR-25 補人工接管例外。0.53（2026-10-26）依 U43～U45 新增 GitLab OIDC 登入、YAML 服務目錄與監控探測鏈（FR-51～53）、AC-31～33；CON-06、CON-09 改為 platform 使用 GitLab OIDC。0.54（2026-10-31）新增 U46～U48：唯讀 AI 對話、需求分析 skill 與 Spring AI／Qwen／MCP（FR-54～56、SA-15、SD-21）。舊版歷史保留在 git 紀錄。
 
 配套文件：
 
