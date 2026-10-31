@@ -4,7 +4,7 @@
 
 請從 **[文件索引](doc/README.md)** 開始閱讀。
 
-- 對齊需求（`doc/specifications/aligned/aligned-requirements.md`，U1–U45）：**0.53**。舊版 SRS／SA／SD 草稿若與對齊需求衝突，以對齊需求為準。
+- 對齊需求（`doc/specifications/aligned/aligned-requirements.md`，U1–U48）：**0.54**。舊版 SRS／SA／SD 草稿若與對齊需求衝突，以對齊需求為準。
 - 模型品質評估（MQ）及方案與工具測試（ST）：兩份獨立案例集，**0.5**。
 - 首批案例：Jenkins Job 內容查詢、單一 Job 設定備份與刪除。
 - 正式端點與實際測試資料尚待提供；規格中的預期結果不是實測通過證明。
@@ -18,7 +18,7 @@ v1 包含：
 - 單一 `WorkItem` 狀態機、結案原因、工作類型與 `work_activity`／`case_event` 歷史；非法轉換會被拒絕。
 - Alertmanager webhook 與 generic API 收告警。相同 `source` + `sourceEventId` 冪等；fingerprint 為 fp-v1（不含 severity、source）。同一未結 fingerprint 只開一張單。跨資源關聯候選先通知、確認前不開票；單一成員超過 60 秒才開一般案件。
 - `work_task` 以 `FOR UPDATE SKIP LOCKED` 領取。`platform.workflow.workers` 可配置（建議 8）。等待狀態會寫回資料庫並釋放 worker。同一資源的補救鎖依 SD-18：執行中的租約過期不會自動放開。
-- Jira 同步 outbox 存在 PostgreSQL。暫時失敗最多 5 次重試後停止並留給人工。Jira、Teams、Qwen／LiteLLM、MCP／VM 都在 port 後面；v1 用假實作，不會打外網。
+- Jira 同步 outbox 存在 PostgreSQL。暫時失敗最多 5 次重試後停止並留給人工。Jira、Teams、Qwen／LiteLLM、MCP／VM 都在 port 後面；既有工作流維持假實作，AI 對話則可依下節設定連接 Qwen 與唯讀 MCP。
 - 已知解法與自動補救白名單在領域政策裡。沒有命中白名單就停在待核准；沒有人核准就維持 pending。結案草稿必須由使用者確認。
 - GitLab OIDC 登入（`openid profile email`），不看角色，登入後每個人看到相同清單，並回到原本的深連結。清單可依系統、台北時間範圍、狀態篩選，每頁 20／50／100（預設 50），預設只顯示未結案。明細頁有時間軸。
 - 受管服務與整合服務寫在 [`config/platform-services.yml`](config/platform-services.yml)。秘密只寫 `${NAME}`。啟動時檢查缺欄位、解不出來的參考、未知 template、重複 id。
@@ -102,7 +102,7 @@ java -jar web/build/libs/ai-devops-platform-0.0.1-SNAPSHOT.jar
 
 查詢工作受理／停止是初始範例；InMemoryWorkJournal 仍僅為 test fixture。新增 demo profile 使用 H2 交易、NotificationRelay 與模擬服務完成受管服務查詢；沒有 production persistence／scheduler 或變更 API。開發測試不代表 `doc/testing/` 的真實 MQ／ST 案例已執行。
 
-在 IntelliJ IDEA 開啟專案根目錄或 `build.gradle`，使用 Gradle Wrapper 並將 Gradle JVM 設為 JDK 21，執行 `AiDevopsPlatformApplication` 即可。Spring AI／Qwen、MCP、PostgreSQL、LDAP 等整合依規格於後續實作階段加入，目前啟動不需其連線資訊。
+在 IntelliJ IDEA 開啟專案根目錄或 `build.gradle`，使用 Gradle Wrapper 並將 Gradle JVM 設為 JDK 21，執行 `AiDevopsPlatformApplication` 即可。預設 profile 不啟用外部整合；platform 的 AI 對話需依下節明確設定後啟用。
 
 版本依據：[Spring Boot Gradle Plugin](https://docs.spring.io/spring-boot/gradle-plugin/)；建置骨架與 Wrapper 由 [Spring Initializr](https://start.spring.io/) 產生後整理。後續引入 Spring AI 時須另外鎖定並驗證相容版本。
 
@@ -130,3 +130,15 @@ curl -u normal:demo-normal http://127.0.0.1:8080/api/v1/managed-services/jenkins
 開啟 `http://127.0.0.1:8080/login`，使用上述 demo 測試帳號以表單登入；登入成功導向 `/home`，失敗到 `/login-failure`，`POST /logout` 登出回登入頁。管理頁面僅在 demo profile 提供，採 Spring Security 表單登入＋Session＋CSRF；`/api/**` 仍為 HTTP Basic，API 行為不受 UI Session 影響。設計與驗收條件見 [管理介面第一階段設計](doc/design/management-login-demo.md)。
 
 執行流程用 model／service／adapter／web；web 整合測試另外接入 MQ／ST，涵蓋全部六模組。尚未實作真連線 adapter，因此改 URL／key 不會自動接通，改成正式 provider mode 會拒絕啟動。
+
+## AI 唯讀對話（platform）
+
+登入後開啟 `http://127.0.0.1:8080/chat`。預設顯示尚未啟用；要連 Qwen，先提供 `QWEN_API_KEY` 環境變數，在 [config/ai-chat.yml](config/ai-chat.yml) 調整模型與 base URL，再執行：
+
+```bash
+./gradlew :web:bootRun --args='--spring.profiles.active=platform --platform.chat.enabled=true'
+```
+
+仍需前述 PostgreSQL、GitLab OIDC 與服務目錄秘密參考。模型預設 `qwen-flash 3.8` 依使用者指定保留；官方文件未證實此精確 id，請依實際帳戶改成有效模型或 LiteLLM alias。DashScope base URL 包含 `/compatible-mode/v1`；LiteLLM 請使用其 OpenAI 相容 `/v1` base URL。
+
+`platform.chat.file` 可指定另一份原始 YAML，API key 僅允許 `${NAME}`；`platform.chat.skill` 可指定 `file:/.../SKILL.md`。遠端 MCP／Glove 的 Streamable HTTP 與唯讀 binding 範例見設定檔。對話只提出建議，不執行修復；歷史只保存在 session，最多 20 回合。詳細契約見 SD-21，驗證與限制見根目錄 `PR_DESCRIPTION.md`。

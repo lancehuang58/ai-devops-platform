@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI 對話｜AI DevOps 平台</title>
+    <link rel="stylesheet" th:href="@{/css/management.css}">
+    <script th:src="@{/vendor/htmx/htmx.min.js}"></script>
+</head>
+<body class="console"><main>
+    <header class="bar"><h1>AI 對話</h1><a th:href="@{/work-items}">工作項目</a></header>
+    <p>請提供目錄中的資源 id。AI 只蒐集唯讀資料並提供建議；變更須走既有核准流程。</p>
+    <section id="conversation" th:fragment="conversation" aria-live="polite">
+        <p th:if="${error}" th:text="${error}" role="alert"></p>
+        <article th:each="turn : ${turns}">
+            <h2>需求</h2><pre class="chat-text" th:text="${turn.user}"></pre>
+            <p th:text="${turn.analysis}"></p>
+            <details><summary>唯讀證據</summary><pre class="chat-text" th:text="${turn.evidence}"></pre></details>
+            <h2>診斷與建議</h2><pre class="chat-text" th:text="${turn.answer}"></pre>
+        </article>
+    </section>
+    <form th:action="@{/chat}" method="post" th:attr="hx-post=@{/chat}" hx-target="#conversation" hx-swap="outerHTML" hx-disabled-elt="find button">
+        <label for="message">需求</label><textarea id="message" name="message" required maxlength="4000" rows="5"></textarea>
+        <button type="submit">送出</button>
+    </form>
+    <form th:action="@{/chat/clear}" method="post"><button type="submit">清除本次對話</button></form>
+</main></body></html>

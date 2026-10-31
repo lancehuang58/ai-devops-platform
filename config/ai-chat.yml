@@ -1,0 +1,15 @@
+# 此檔由原始 YAML 載入；api-key 只能是 ${NAME}，不可寫字面值。
+model: qwen-flash 3.8
+base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+api-key: ${QWEN_API_KEY}
+servers: []
+# 額外 MCP 伺服器使用 Streamable HTTP。只綁定已驗證的唯讀工具。
+# servers:
+#   - id: glove
+#     url: https://glove.example.internal/mcp
+#     token: ${GLOVE_TOKEN}
+#     read-only: true
+#     bindings:
+#       status: vm_status
+# 遠端工具必須接受 {"resource":"目錄資源 id"}，並宣告 readOnlyHint=true。
+# 不得綁定接受 shell／command 的通用 SSH 工具。

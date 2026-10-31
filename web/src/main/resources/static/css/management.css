@@ -65,3 +65,5 @@ th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid #e6eb
 .timeline { background: #fff; border-radius: 8px; padding: 1rem 1rem 1rem 2rem; }
 section { margin-top: 1.5rem; }
 section form { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin: .5rem 0 1rem; }
+
+.chat-text { white-space: pre-wrap; overflow-wrap: anywhere; }

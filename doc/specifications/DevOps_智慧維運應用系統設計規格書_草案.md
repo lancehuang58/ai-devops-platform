@@ -1,6 +1,6 @@
 # DevOps 智慧維運應用系統設計規格書
 
-系統設計草案｜設計版本 0.53｜依據 SRS／SA 0.53 與已對齊需求第六版（U1～U45）｜2026 年 10 月 26 日（Asia/Taipei）
+系統設計草案｜設計版本 0.54｜依據 SRS／SA 0.54 與已對齊需求第七版（U1～U48）｜2026 年 10 月 31 日（Asia/Taipei）
 
 ## 文件定位
 
@@ -2225,10 +2225,31 @@ ALTER TABLE work_item ADD COLUMN active_takeover_id uuid REFERENCES manual_takeo
 | GL-02 | 範例 YAML 解出參考且 toString 不含值；字面秘密、未知類型、未知 probe、重複 id、未解析參考失敗 |
 | GL-03 | 不健康停止鏈並只開一張 `probe` 單，第二次只加 occurrence；通道失敗加健康較低層只一則通知、零張單；三層都失敗的標題含三個原因 |
 
+# SD-21 AI 對話與唯讀 MCP
+
+對應 FR-54～56、SA-15。鎖定 Maven Central 可解析的 Spring AI BOM **2.0.2**，官方 2.0.x 支援 Boot 4.0／4.1；Java 21。使用 `spring-ai-openai`（2.x OpenAI SDK 實作）、`spring-ai-mcp`；不引入會在預設 profile 建立連線的 starters。
+
+- service：純 Java `ChatUseCase`、`ChatReasoning`、`ChatTools` ports；`ChatService` 固定分析→驗證→唯讀補查→回答，沒有變更 port。
+- adapter：`SkillChatReasoning` 用 SystemMessage 載入 skill；不依賴 service 實作。`ReadOnlyCatalogTools` 的 Spring AI 工具以 `McpToolUtils` 轉 MCP specifications，標記 readOnlyHint；`ChatMcpRuntime` 管理真正 SDK client/server 與關閉生命週期。
+- 本地 MCP 使用私有行程內 JSON-RPC transport，沒有公開 HTTP 工具入口；既不繞回 Web 登入，也不開未驗證工具端點。工具參數為唯一 `resource`，服務目錄白名單再驗證。健康 GET 連線 3 秒、請求 5 秒，不轉址、不傳憑證、不取 body，只回報 status code。
+- status 以參數化 SQL 讀取 `probe_result` 最近四筆的 channel／verdict／disposition／observed_at；不回傳可能包含秘密的 reason。
+- web 是唯一組裝根；`platform` 下的 `/chat`、`/chat/**` 納入 OIDC 與 CSRF chain。`platform.chat.enabled` 預設 false，明確 true 才解析 `platform.chat.file`（預設 `config/ai-chat.yml`）與載入 skill（預設 `classpath:skills/requirement-analysis/SKILL.md`，可改 `file:`）。
+- YAML 原文由安全 loader 解析，避免 Spring 先展開秘密後誤認字面值；拒絕重複鍵、字面 key、未解析參考、不安全 URL；設定 `toString` 遮罩、不記錄 prompt／回應／credential。模型 timeout 30 秒、零自動重試、最多 2000 completion tokens。
+- 模型分析只允許 `TYPE|resourceId|catalog,status,health`，每輪最多三種唯讀工具；輸出不能指定 server、URL、command。遠端設定須明確 `read-only: true`，binding 工具也須回報 readOnlyHint=true 且非 destructive。這是管理者預先信任的唯讀契約，不能把模型或遠端自述當成執行權限。
+- 遠端 MCP 用 Streamable HTTP，連線 3 秒、初始化／工具各 10 秒、回應限制 64 KiB；`servers` 清單可新增 Glove，binding 可將邏輯 status 導向 `vm_status`，參數契約須為 `{resource}`。SSH／shell 通用工具不可綁入；不同契約需先由 Glove 提供唯讀 facade。
+- session 最多 20 回合；模型使用最近 12 則歷史訊息；需求 4000 字、每個工具證據 8000 字、答案 12000 字。畫面使用純文字、CSRF 與本地 htmx；沒有持久化 migration 需求。
+
+驗證：stub ChatModel＋真正行程內 MCP 測試 skill→工具→回答；JDK 本地 HTTP stub 測健康 GET／不轉址及遠端 MCP binding；MockMvc 驗證登入、CSRF、片段與 XSS 跳脫；既有 ArchUnit 保持。PlatformWebIT 新增真 OIDC/session 對話案例，需要 PostgreSQL Testcontainers。測試不呼叫真 Qwen、Glove 或外部系統。
+
+模型查證（2026-10-31）：[阿里雲 qwen-flash](https://help.aliyun.com/en/model-studio/qwen-flash) 列出 `qwen-flash`、`qwen-flash-2025-07-28`，未證實精確字串 `qwen-flash 3.8`；保留使用者預設，啟用前由部署者依實際地區／帳戶或 LiteLLM alias 更改。相容性來源：[Spring AI Getting Started](https://docs.spring.io/spring-ai/reference/getting-started.html)。
+
+延後：串流、跨 session 歷史、工作項目自動建立、正式 Qwen 品質驗收、公司 Glove 契約驗收；沒有擴張修復執行權限。
+
 ## 版本紀錄
 
 | 版本 | 日期 | 摘要 |
 |---|---|---|
+| 0.54 | 2026-10-31 | 新增登入後唯讀 AI 對話、需求分析 skill、Spring AI／Qwen 與 MCP 工具白名單；不授予變更權限。 |
 | 0.53 | 2026-10-26 | 依已對齊需求第六版 U43～U45 新增 SD-20：GitLab OIDC registration、YAML catalog 與 SecretBundle、ProbeChain／ProbeRunner／probe_result、通道降級通知、GL-01～03。SD-17.3 的 platform 登入改為 OIDC。 |
 | 0.52 | 2026-10-26 | 依已對齊需求第五版 U39～U42 新增 SD-19：manual_takeover／takeover_package／takeover_writeback DDL、TakeoverUseCase 步驟（接管 T27、接管包與遮罩、寫回、強制結案 T28、結束接管）、Web 區塊、設定、指標與 TK-01～10 測試；SD-01.7 新增接管 API；SD-04.1 補 active_takeover_id、TAKEOVER、接管事件、CANCELLED；SD-14.5 補人工接管例外。 |
 | 0.51 | 2026-10-26 | 依已對齊需求第四版 U35～U38 新增 SD-17（Web 介面與技術選型：PostgreSQL／Flyway／JPA Specification、form login＋LDAP、Thymeleaf＋htmx、read model、路由與 filter chain、索引、沿用 `b8a23d4` demo 的修正）與 SD-18（work_task 佇列、worker 設定、resource_lock／resource_lock_waiter、等待與失效鎖處理、測試）；SD-01.10 修改 worker 預設改 2；SD-01.7、SD-04.1、SD-07.3、SD-14.1、SD-15.1 加指引。AR Q22～Q26 待確認。 |

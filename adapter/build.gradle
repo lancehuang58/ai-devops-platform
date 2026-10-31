@@ -1,6 +1,10 @@
 plugins { id 'java-test-fixtures' }
 description = 'Outbound and event adapters; test doubles stay in test fixtures'
 dependencies {
+    api platform('org.springframework.ai:spring-ai-bom:2.0.2')
+    implementation 'org.springframework.ai:spring-ai-openai'
+    api 'org.springframework.ai:spring-ai-mcp'
+
     implementation project(':service')
     implementation 'org.springframework:spring-context'
     implementation 'org.springframework:spring-jdbc'
@@ -15,3 +19,6 @@ dependencies {
     testImplementation 'org.testcontainers:testcontainers-postgresql'
     testFixturesApi project(':service')
 }
+
+// Spring AI tool schemas use the declared parameter names.
+tasks.withType(JavaCompile).configureEach { options.compilerArgs.add('-parameters') }
