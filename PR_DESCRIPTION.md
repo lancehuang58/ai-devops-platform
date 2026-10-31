@@ -32,7 +32,7 @@ Docker 阻礙的 adapter 類別：`PlatformFlowPersistenceTest`、`PlatformPersi
 可重現指令：
 
 ```bash
-export JAVA_HOME=/home/box/.local/jdk/jdk-21.0.13+9 PATH=/home/box/.local/jdk/jdk-21.0.13+9/bin:$PATH
+# 使用 JDK 21
 ./gradlew test --continue
 ./gradlew build --continue
 ./gradlew :web:bootJar
@@ -41,13 +41,13 @@ export JAVA_HOME=/home/box/.local/jdk/jdk-21.0.13+9 PATH=/home/box/.local/jdk/jd
 只驗證新增的非 Docker 案例：
 
 ```bash
-export JAVA_HOME=/home/box/.local/jdk/jdk-21.0.13+9 PATH=/home/box/.local/jdk/jdk-21.0.13+9/bin:$PATH
+# 使用 JDK 21
 ./gradlew :service:test --tests '*ChatServiceTest' :adapter:test --tests '*adapter.chat.*' :web:test --tests '*web.chat.*' --tests '*ModuleArchitectureTest'
 ```
 
 ## 本地執行
 
-先提供 PostgreSQL 16 與已登記的 GitLab OIDC client／redirect URI。這台機器沒有 Docker，需使用可連線 PostgreSQL 或在具 Docker 的環境依 README 啟動。
+先提供 PostgreSQL 16 與已登記的 GitLab OIDC client／redirect URI。本次驗證環境未提供 Docker；執行時可使用可連線的 PostgreSQL，或在具 Docker 的環境依 README 啟動。
 
 由環境變數或 Secret 注入下列值，不寫入版本庫：
 
@@ -59,7 +59,7 @@ export JAVA_HOME=/home/box/.local/jdk/jdk-21.0.13+9 PATH=/home/box/.local/jdk/jd
 調整 `config/ai-chat.yml` 的 model 與 base-url（DashScope 範例含 `/compatible-mode/v1`，LiteLLM 通常是其 `/v1` base URL）。API key 欄位只保留 `${QWEN_API_KEY}` 參考。
 
 ```bash
-export JAVA_HOME=/home/box/.local/jdk/jdk-21.0.13+9 PATH=/home/box/.local/jdk/jdk-21.0.13+9/bin:$PATH
+# 使用 JDK 21
 ./gradlew :web:bootRun --args='--spring.profiles.active=platform --platform.chat.enabled=true'
 ```
 
@@ -74,15 +74,3 @@ export JAVA_HOME=/home/box/.local/jdk/jdk-21.0.13+9 PATH=/home/box/.local/jdk/jd
 ## 延後項目
 
 串流回應、跨 session／持久化歷史、工作項目自動建立、真 Qwen 模型品質與帳戶可用性、公司 Glove 實際契約驗收，以及有 Docker 環境的 PostgreSQL／OIDC 整合重跑。遠端 MCP 唯讀宣告須由部署者驗證，不能據此開放通用 shell 工具。
-
-## 本地 commit 交付限制
-
-此環境將原始 `.git` 掛載為唯讀；實際 `git add` 被拒絕（無法建立 `.git/index.lock`）。因此原工作樹檔案已完成，但原分支 HEAD 無法更新。已將 Git metadata 複製至 `/tmp/ai-chat-module-git`，在相同名稱的本地 `feat/ai-chat-module` 分次 commit，並將完整歷史匯出 `/tmp/ai-chat-module.bundle`。未 push、未開 PR。
-
-可在可寫目錄直接檢閱 bundle：
-
-```bash
-git clone --branch feat/ai-chat-module /tmp/ai-chat-module.bundle /tmp/ai-chat-review
-```
-
-bundle 只是本地交付物，不含真實秘密，也不將本次任務指示加入版本庫。原分支保持原 HEAD；需在 `.git` 可寫的環境匯入 commits 才能完成原分支更新。
